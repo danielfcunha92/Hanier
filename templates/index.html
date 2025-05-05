@@ -81,7 +81,16 @@
   <h2>Gráficos de Tingimento</h2>
   <div style="margin-bottom: 15px;">
     <button onclick="abrirModal()">Nova Etapa</button>
-    <!-- Outros botões -->
+    <button onclick="editarEtapa()">Editar Etapa</button>
+    <button onclick="excluirEtapa()">Excluir Etapa</button>
+    <button onclick="subirEtapa()">↑ Subir</button>
+    <button onclick="descerEtapa()">↓ Descer</button>
+    <button onclick="limparEtapas()">Limpar</button>
+    <button onclick="editarTitulo()">Editar Título</button>
+    <button onclick="salvarEtapas()">Salvar Etapas</button>
+    <button onclick="carregarEtapas()">Carregar Etapas</button>
+    <button onclick="imprimir(false)">Imprimir</button>
+    <button onclick="imprimir(true)">Receita</button>
   </div>
   <table>
     <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
@@ -97,7 +106,6 @@
   <h3>Gráfico de Temperatura × Tempo</h3>
   <img src="/grafico.png?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
 </div>
-
 <div id="modal">
   <div id="modal-content">
     <h3>Nova Etapa</h3>
@@ -116,7 +124,6 @@
     <button onclick="fecharModal()">Cancelar</button>
   </div>
 </div>
-
 <script>
 function abrirModal() {
   document.getElementById('modal').style.display = 'flex';
@@ -202,6 +209,5 @@ async function confirmarEtapa() {
   location.reload();
 }
 </script>
-
 </body>
 </html>
