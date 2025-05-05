@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Processos de Tingimento</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
+    input, button { margin: 5px; padding: 6px; }
+  </style>
+</head>
+<body>
+  <h2>Processos de Tingimento</h2>
+
+  <label>Título do Processo:</label>
+  <input id="titulo" value="{{ titulo }}" onchange="atualizarTitulo(this.value)">
+  <br>
+
+  <label>Relação de Banho:</label>
+  <input id="relacao" value="{{ relacao_banho }}" onchange="atualizarRelacao(this.value)">
+  <br>
+
+  <p><strong>Tempo total:</strong> <span id="tempo_total">{{ tempo_total }}</span></p>
+
+  <h3>Etapas</h3>
+  <table id="tabela_etapas">
+    <tr><th>Tipo</th><th>Tempo (min)</th><th>Temperatura (°C)</th><th>Ações</th></tr>
+    {% for e in etapas %}
+    <tr>
+      <td>{{ e.tipo }}</td>
+      <td>{{ e.tempo }}</td>
+      <td>{{ e.temperatura }}</td>
+      <td>
+        <button onclick="subirEtapa({{ loop.index0 }})">⬆</button>
+        <button onclick="descerEtapa({{ loop.index0 }})">⬇</button>
+        <button onclick="excluirEtapa({{ loop.index0 }})">🗑</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <input placeholder="Tipo" id="tipo_etapa">
+  <input placeholder="Tempo" id="tempo_etapa" type="number">
+  <input placeholder="Temperatura" id="temp_etapa" type="number">
+  <button onclick="adicionarEtapa()">Adicionar Etapa</button>
+  <button onclick="limparEtapas()">Limpar Tudo</button>
+
+  <h3>Gráfico</h3>
+  <img src="/grafico.png?{{ loop.index }}" width="600" alt="Gráfico de Tingimento">
+
+  <h3>Receita</h3>
+  <textarea id="receita_json" style="width:100%;height:100px;">{{ receita | tojson }}</textarea>
+  <br>
+  <button onclick="enviarReceita()">Salvar Receita</button>
+
+  <h3>Imprimir PDF</h3>
+  <button onclick="imprimir(false)">Imprimir (sem custo)</button>
+  <button onclick="imprimir(true)">Imprimir (com custo)</button>
+
+  <h3>Salvar e Carregar</h3>
+  <button onclick="salvarJSON()">Salvar Dados (.json)</button>
+  <input type="file" onchange="carregarJSON(this.files[0])">
+  
+  <script>
+    async function atualizarTitulo(valor) {
+      await fetch("/atualizar_titulo", { method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify({titulo: valor}) });
+    }
+
+    async function atualizarRelacao(valor) {
+      await fetch("/atualizar_relacao", { method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify({relacao: valor}) });
+    }
+
+    async function adicionarEtapa() {
+      let tipo = document.getElementById("tipo_etapa").value;
+      let tempo = document.getElementById("tempo_etapa").value;
+      let temperatura = document.getElementById("temp_etapa").value;
+      await fetch("/adicionar_etapa", { method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify({tipo, tempo, temperatura}) });
+      location.reload();
+    }
+
+    async function subirEtapa(i) {
+      await fetch("/subir_etapa/" + i, { method: "POST" });
+      location.reload();
+    }
+
+    async function descerEtapa(i) {
+      await fetch("/descer_etapa/" + i, { method: "POST" });
+      location.reload();
+    }
+
+    async function excluirEtapa(i) {
+      await fetch("/excluir_etapa/" + i, { method: "POST" });
+      location.reload();
+    }
+
+    async function limparEtapas() {
+      await fetch("/limpar_etapas", { method: "POST" });
+      location.reload();
+    }
+
+    async function imprimir(comCusto) {
+      const res = await fetch("/imprimir_pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ com_custo: comCusto })
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    }
+
+    async function salvarJSON() {
+      window.open("/salvar_dados", "_blank");
+    }
+
+    async function carregarJSON(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      await fetch("/carregar_dados", { method: "POST", body: formData });
+      location.reload();
+    }
+
+    async function enviarReceita() {
+      try {
+        let data = JSON.parse(document.getElementById("receita_json").value);
+        await fetch("/atualizar_receita", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ receita: data })
+        });
+        alert("Receita atualizada com sucesso.");
+      } catch (e) {
+        alert("Erro ao salvar receita. Verifique o formato JSON.");
+      }
+    }
+  </script>
+</body>
+</html>
