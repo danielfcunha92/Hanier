@@ -140,7 +140,6 @@ def gerar_grafico():
         tempos.append(acumulado)
         temperaturas.append(etapa.temperatura)
 
-    # Corrigir lista para o mesmo comprimento
     if len(temperaturas) < len(tempos):
         temperaturas.insert(0, temperaturas[0])
 
@@ -162,62 +161,72 @@ def imprimir_pdf():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
 
-    # Página 1: gráfico + etapas
-    try:
-        logo = ImageReader(LOGO_PATH)
-        c.drawImage(logo, 440, 720, width=120, preserveAspectRatio=True, mask='auto')
-    except:
-        pass
+    buf_img = io.BytesIO()
+    gerar_grafico().save(buf_img)
+    buf_img.seek(0)
+    img = ImageReader(buf_img)
+    w, h = letter
+    img_w = w - 80
+    img_h = img_w * 0.5
+    c.drawImage(img, 40, h - 40 - img_h, img_w, img_h)
 
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, 750, titulo_grafico or "Processo de Tingimento")
-    c.setFont("Helvetica", 11)
-
-    y = 720
-    for etapa in etapas:
-        linha = f"{etapa.tipo}: {etapa.tempo} min, {etapa.temperatura}°C"
-        c.drawString(50, y, linha)
-        y -= 18
-        if y < 100:
+    y = h - 60 - img_h
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(40, y, "Descritivo de Etapas:")
+    y -= 20
+    c.setFont("Helvetica", 10)
+    for i, e in enumerate(etapas, 1):
+        if y < 60:
             c.showPage()
-            y = 750
+            y = h - 40
+        resumo = ", ".join(f"{k}: {v}" for k, v in e.to_dict().items())
+        tempo = e.to_dict().get("tempo", "")
+        c.drawString(40, y, f"{i}. {e.tipo}: {resumo} ({tempo} min)")
+        y -= 15
 
-    c.drawString(50, y - 25, f"Tempo total: {calcular_tempo_total()} h")
-    c.drawString(50, y - 40, f"Relação de banho: {relacao_banho}")
-
-    # Página 2: Receita
     c.showPage()
-    try:
-        c.drawImage(logo, 440, 720, width=120, preserveAspectRatio=True, mask='auto')
-    except:
-        pass
+    y = h - 40
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(40, y, "Receita:")
+    y -= 20
 
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, 750, "Receita")
-    c.setFont("Helvetica", 11)
+    colunas = ["insumo", "quantidade"]
+    if incluir_custo:
+        colunas.append("custo_unitario")
 
-    y = 720
-    total = 0
+    col_width = (w - 80) // len(colunas)
+    c.setFont("Helvetica-Bold", 9)
+    x = 40
+    for col in colunas:
+        c.drawString(x, y, col.capitalize())
+        x += col_width
+    y -= 12
+
+    c.setFont("Helvetica", 9)
+    total = 0.0
     for item in receita:
-        if incluir_custo:
-            subtotal = item.subtotal()
-            linha = f"{item.insumo}: {item.quantidade} kg x R$ {item.custo_unitario:.2f} = R$ {subtotal:.2f}"
-            total += subtotal
-        else:
-            linha = f"{item.insumo}: {item.quantidade} kg"
-        c.drawString(50, y, linha)
-        y -= 18
-        if y < 100:
+        if y < 60:
             c.showPage()
-            y = 750
+            y = h - 40
+        x = 40
+        for col in colunas:
+            val = getattr(item, col)
+            if isinstance(val, float):
+                val = f"{val:.2f}"
+            c.drawString(x, y, str(val))
+            x += col_width
+        if incluir_custo:
+            total += item.subtotal()
+        y -= 12
 
     if incluir_custo:
-        c.drawString(50, y - 25, f"Total: R$ {total:.2f}")
+        y -= 10
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(40, y, f"Custo total: R$ {total:.2f}")
 
     c.save()
     buffer.seek(0)
-
-    return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name="processo.pdf")
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name="processo.pdf")
 
 @app.route("/salvar_dados", methods=["GET"])
 def salvar_dados():
@@ -227,11 +236,9 @@ def salvar_dados():
         "titulo": titulo_grafico,
         "relacao_banho": relacao_banho
     }
-
     buffer = io.BytesIO()
     buffer.write(json.dumps(dados, indent=2).encode("utf-8"))
     buffer.seek(0)
-
     return send_file(buffer, as_attachment=True, download_name="processo_dados.json", mimetype="application/json")
 
 @app.route("/carregar_dados", methods=["POST"])
@@ -239,7 +246,6 @@ def carregar_arquivo():
     file = request.files.get("file")
     if not file:
         return jsonify(success=False, error="Arquivo não encontrado.")
-
     try:
         dados = json.load(file)
         carregar_dados(dados)
@@ -247,12 +253,8 @@ def carregar_arquivo():
     except Exception as e:
         return jsonify(success=False, error=str(e))
 
-
 if __name__ == "__main__":
-    # Configura o diretório 'static' para servir imagens, logo, etc.
     os.makedirs("static", exist_ok=True)
     if not os.path.exists(LOGO_PATH):
-        # Cria um placeholder se o logo não existir
         Image.new("RGBA", (300, 100), (255, 255, 255, 0)).save(LOGO_PATH)
-
     app.run(host="0.0.0.0", port=10000)
