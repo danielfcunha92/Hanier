@@ -129,12 +129,12 @@ def atualizar_receita():
 @app.route("/grafico.png")
 def gerar_grafico():
     if not etapas:
-        return "", 204  # Sem conteúdo
+        return "", 204
 
     tempos = [0]
     temperaturas = []
-
     acumulado = 0
+
     for etapa in etapas:
         acumulado += etapa.tempo
         tempos.append(acumulado)
@@ -152,7 +152,11 @@ def gerar_grafico():
     plt.savefig(buf, format='png')
     plt.close()
     buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+
+    response = send_file(buf, mimetype='image/png')
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 @app.route("/imprimir_pdf", methods=["POST"])
 def imprimir_pdf():
