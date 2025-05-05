@@ -46,7 +46,8 @@
   <button onclick="limparEtapas()">Limpar Tudo</button>
 
   <h3>Gráfico</h3>
-  <img src="/grafico.png?{{ loop.index }}" width="600" alt="Gráfico de Tingimento">
+  <img src="/grafico.png?{{ range(1)|random }}" width="600" alt="Gráfico de Tingimento">
+
 
   <h3>Receita</h3>
   <textarea id="receita_json" style="width:100%;height:100px;">{{ receita | tojson }}</textarea>
