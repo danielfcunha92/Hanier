@@ -79,11 +79,10 @@
 <div class="container">
   <img src="{{ url_for('static', filename='logo_hanier.png') }}" alt="Logo Hanier" style="float: right; width: 160px; margin-top: -10px; margin-right: 10px;">
   <h2>Gráficos de Tingimento</h2>
-
   <div style="margin-bottom: 15px;">
     <button onclick="abrirModal()">Nova Etapa</button>
+    <!-- Outros botões -->
   </div>
-
   <table>
     <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
     {% for etapa in etapas %}
@@ -94,11 +93,9 @@
     </tr>
     {% endfor %}
   </table>
-
   <p>Tempo total: {{ tempo_total }}</p>
-
   <h3>Gráfico de Temperatura × Tempo</h3>
-  <img src="{{ url_for('gerar_grafico') }}?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
+  <img src="/grafico.png?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
 </div>
 
 <div id="modal">
