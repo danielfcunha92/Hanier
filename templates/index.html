@@ -61,20 +61,38 @@
       font-weight: bold;
       text-align: center;
     }
+
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 400px;
+    }
+
+    #modal select, #modal input {
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 6px;
+    }
   </style>
 </head>
 <body>
-<body>
   <div class="container">
-
     <img src="{{ url_for('static', filename='logo_hanier.png') }}" alt="Logo Hanier" style="float: right; width: 160px; margin-top: -10px; margin-right: 10px;">
-
     <h2>Gráficos de Tingimento</h2>
 
-
-    <!-- BARRA DE BOTÕES SUPERIOR -->
     <div style="margin-bottom: 15px;">
-      <button onclick="novaEtapa()">Nova Etapa</button>
+      <button onclick="abrirModal()">Nova Etapa</button>
       <button onclick="editarEtapa()">Editar Etapa</button>
       <button onclick="excluirEtapa()">Excluir Etapa</button>
       <button onclick="subirEtapa()">↑ Subir</button>
@@ -87,119 +105,164 @@
       <button onclick="imprimir(true)">Receita</button>
     </div>
 
-    <!-- TABELA CENTRAL -->
-<table>
-  <tr>
-    <th>Tipo de Etapa</th>
-    <th>Resumo</th>
-    <th>Tempo (min)</th>
-  </tr>
-  {% for etapa in etapas %}
-  <tr>
-    <td>{{ etapa.tipo }}</td>
-    <td>{{ etapa.dados.get('resumo', '') }}</td>
-    <td>{{ etapa.dados.get('tempo', '') }}</td>
-  </tr>
-  {% endfor %}
-</table>
+    <table>
+      <tr>
+        <th>Tipo de Etapa</th>
+        <th>Resumo</th>
+        <th>Tempo (min)</th>
+      </tr>
+      {% for etapa in etapas %}
+      <tr>
+        <td>{{ etapa.tipo }}</td>
+        <td>{{ etapa.dados.get('resumo', '') }}</td>
+        <td>{{ etapa.dados.get('tempo', '') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
 
+    <p>
+      Tempo total: {{ tempo_total }}
+    </p>
 
-    <!-- TEMPO TOTAL -->
-<p>
-  Tempo total: {{ tempo_total }}
-</p>
-
-<h3>Gráfico de Temperatura × Tempo</h3>
-<img src="/grafico.png?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
-
-
+    <h3>Gráfico de Temperatura × Tempo</h3>
+    <img src="/grafico.png?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
   </div>
+
+  <div id="modal">
+    <div id="modal-content">
+      <h3>Nova Etapa</h3>
+      <label for="tipo">Tipo de Etapa:</label>
+      <select id="tipo" onchange="atualizarCampos()">
+        <option value="Encher Máquina">Encher Máquina</option>
+        <option value="Injetar Produto">Injetar Produto</option>
+        <option value="Dosagem de Produto">Dosagem de Produto</option>
+        <option value="Termoregulação">Termoregulação</option>
+        <option value="Patamar">Patamar</option>
+        <option value="Transbordo">Transbordo</option>
+        <option value="Soltar Banho">Soltar Banho</option>
+        <option value="Aviso">Aviso</option>
+      </select>
+      <div id="campos"></div>
+      <button onclick="confirmarEtapa()">Confirmar</button>
+      <button onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+
 <script>
-  async function novaEtapa() {
-    const tipo = prompt("Tipo da etapa:");
-    const tempo = prompt("Tempo (min):");
-    const temperatura = prompt("Temperatura (°C):");
+  function abrirModal() {
+    document.getElementById('modal').style.display = 'flex';
+    atualizarCampos();
+  }
 
-    if (tipo && tempo && temperatura) {
-      await fetch("/adicionar_etapa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo, tempo, temperatura })
+  function fecharModal() {
+    document.getElementById('modal').style.display = 'none';
+  }
+
+  function atualizarCampos() {
+    const tipo = document.getElementById('tipo').value;
+    const campos = document.getElementById('campos');
+    campos.innerHTML = '';
+
+    if (tipo === 'Encher Máquina') {
+      campos.innerHTML += '<label>Tipo de Água:</label><select id="agua"><option>Quente</option><option>Fria</option></select>';
+      campos.innerHTML += '<label>Relação de Banho (1:x):</label><input id="relacao" type="number">';
+    }
+    if (tipo === 'Termoregulação') {
+      campos.innerHTML += '<label>Temp. Inicial (°C):</label><input id="temp_inicial" type="number">';
+      campos.innerHTML += '<label>Temp. Final (°C):</label><input id="temp_final" type="number">';
+      campos.innerHTML += '<label>Gradiente (°C/min):</label><input id="gradiente" type="number">';
+    }
+    if (tipo === 'Patamar') {
+      campos.innerHTML += '<label>Temperatura (°C):</label><input id="temperatura" type="number">';
+      campos.innerHTML += '<label>Tempo (min):</label><input id="tempo" type="number">';
+    }
+    if (tipo === 'Dosagem de Produto') {
+      campos.innerHTML += '<label>Produto:</label><input id="produto" type="text">';
+      campos.innerHTML += '<label>Tempo de Dosagem:</label><input id="tempo_dosagem" type="number">';
+      campos.innerHTML += '<label>Curva:</label><input id="curva" type="text">';
+    }
+    if (tipo === 'Injetar Produto') {
+      campos.innerHTML += '<label>Produto:</label><input id="produto_injetar" type="text">';
+      campos.innerHTML += '<label>Água:</label><select id="agua_injetar"><option>Limpa</option><option>Retorno</option></select>';
+    }
+    if (tipo === 'Transbordo') {
+      campos.innerHTML += '<label>Temp. Inicial:</label><input id="temp_i" type="number">';
+      campos.innerHTML += '<label>Temp. Final:</label><input id="temp_f" type="number">';
+      campos.innerHTML += '<label>Tempo (min):</label><input id="tempo_transb" type="number">';
+      campos.innerHTML += '<label>Relação de Banho (1:x):</label><input id="relacao_transb" type="number">';
+    }
+    if (tipo === 'Aviso') {
+      campos.innerHTML += '<label>Aviso:</label><select id="aviso"><option>Amostra</option><option>Medir Densidade</option><option>Medir pH</option></select>';
+      campos.innerHTML += '<label id="faixa_pH_label" style="display:none">Faixa de pH:</label><input id="faixa_pH" type="text" style="display:none">';
+      document.getElementById('aviso').addEventListener('change', function() {
+        const mostrar = this.value === 'Medir pH';
+        document.getElementById('faixa_pH_label').style.display = mostrar ? 'block' : 'none';
+        document.getElementById('faixa_pH').style.display = mostrar ? 'block' : 'none';
       });
-      location.reload();
     }
   }
 
-  async function subirEtapa() {
-    const index = prompt("Índice da etapa para subir:");
-    if (index !== null) {
-      await fetch(`/subir_etapa/${index}`, { method: "POST" });
-      location.reload();
+  async function confirmarEtapa() {
+    const tipo = document.getElementById('tipo').value;
+    let dados = {};
+
+    if (tipo === 'Encher Máquina') {
+      const agua = document.getElementById('agua').value;
+      const relacao = document.getElementById('relacao').value;
+      dados = { agua, relacao };
     }
-  }
-
-  async function descerEtapa() {
-    const index = prompt("Índice da etapa para descer:");
-    if (index !== null) {
-      await fetch(`/descer_etapa/${index}`, { method: "POST" });
-      location.reload();
+    if (tipo === 'Termoregulação') {
+      dados = {
+        temp_inicial: document.getElementById('temp_inicial').value,
+        temp_final: document.getElementById('temp_final').value,
+        gradiente: document.getElementById('gradiente').value
+      };
     }
-  }
-
-  async function excluirEtapa() {
-    const index = prompt("Índice da etapa para excluir:");
-    if (index !== null) {
-      await fetch(`/excluir_etapa/${index}`, { method: "POST" });
-      location.reload();
+    if (tipo === 'Patamar') {
+      dados = {
+        temperatura: document.getElementById('temperatura').value,
+        tempo: document.getElementById('tempo').value
+      };
     }
-  }
-
-  async function limparEtapas() {
-    if (confirm("Tem certeza que deseja limpar todas as etapas?")) {
-      await fetch("/limpar_etapas", { method: "POST" });
-      location.reload();
+    if (tipo === 'Dosagem de Produto') {
+      dados = {
+        produto: document.getElementById('produto').value,
+        tempo_dosagem: document.getElementById('tempo_dosagem').value,
+        curva: document.getElementById('curva').value
+      };
     }
-  }
-
-  async function editarTitulo() {
-    const titulo = prompt("Novo título do processo:");
-    if (titulo) {
-      await fetch("/atualizar_titulo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titulo })
-      });
-      location.reload();
+    if (tipo === 'Injetar Produto') {
+      dados = {
+        produto: document.getElementById('produto_injetar').value,
+        agua: document.getElementById('agua_injetar').value
+      };
     }
-  }
+    if (tipo === 'Transbordo') {
+      dados = {
+        temp_inicial: document.getElementById('temp_i').value,
+        temp_final: document.getElementById('temp_f').value,
+        tempo: document.getElementById('tempo_transb').value,
+        relacao: document.getElementById('relacao_transb').value
+      };
+    }
+    if (tipo === 'Aviso') {
+      dados = {
+        aviso: document.getElementById('aviso').value,
+        faixa_ph: document.getElementById('faixa_pH').value || null
+      };
+    }
+    if (tipo === 'Soltar Banho') {
+      dados = {}; // Etapa automática
+    }
 
-  async function salvarEtapas() {
-    window.open("/salvar_dados", "_blank");
-  }
-
-  async function carregarEtapas() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append("file", file);
-      await fetch("/carregar_dados", { method: "POST", body: formData });
-      location.reload();
-    };
-    input.click();
-  }
-
-  async function imprimir(comCusto) {
-    const res = await fetch("/imprimir_pdf", {
+    await fetch("/adicionar_etapa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ com_custo: comCusto })
+      body: JSON.stringify({ tipo, dados })
     });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+
+    fecharModal();
+    location.reload();
   }
 </script>
 
