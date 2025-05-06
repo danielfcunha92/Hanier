@@ -201,8 +201,11 @@ async function confirmarEtapa() {
     const linhas = document.querySelectorAll("table tr");
     if (linhas.length > 2) {
     const ultima = linhas[linhas.length - 2]; // ignora cabeçalho
-    const tempStr = ultima.cells[2].textContent;
-    temperatura = parseFloat(tempStr) || 0;
+    const linhaTexto = ultima.cells[1].textContent;
+    const regex = /(\d+)°C/;
+    const match = linhaTexto.match(regex);
+    temperatura = match ? parseFloat(match[1]) : 0;
+
   }
 } catch {}
 
