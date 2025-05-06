@@ -139,36 +139,33 @@ def grafico_png():
     etapas = session.get('etapas', [])
     if not etapas:
         return '', 204
-    tempos = [0]
-    temps = [etapas[0].get('dados', {}).get('temperatura', 0)]
-    acum = 0
-    for et in etapas:
-        t = et.get('dados', {}).get('tempo', 0)
-        temp = et.get('dados', {}).get('temperatura', 0)
-        acum += t
-        tempos.append(acum)
-        temps.append(temp)
+
+    # ... montagem de tempos, temps e acum ...
+
     buf = io.BytesIO()
     fig, ax = plt.subplots(figsize=(8,4))
     ax.plot(tempos, temps, marker='o')
     ax.set_xlabel('Tempo (min)')
     ax.set_ylabel('Temperatura (°C)')
 
-    # ─── AQUI VEM A CAIXINHA COM O TEMPO TOTAL ───
+    # título acima do gráfico
+    ax.set_title(session.get('titulo', ''), pad=15)
+
+    # caixa com o tempo total, posicionada acima do quadrado do gráfico
     h, m = divmod(int(acum), 60)
     ax.text(
-        0.98, 0.98,
-        f"Tempo total: {h}:{m:02d}",
-        ha='right', va='top',
+        0.98, 1.02,
+        f"Tempo Total: {h}:{m:02d}",
         transform=ax.transAxes,
-        bbox=dict(facecolor='white', edgecolor='black', pad=4)
+        ha='right', va='bottom',
+        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round', pad=4)
     )
-    # ─────────────────────────────────────────────
 
     plt.tight_layout()
     fig.savefig(buf, format='png')
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
+
 
 
 
