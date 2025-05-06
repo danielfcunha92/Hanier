@@ -152,13 +152,14 @@ def gerar_grafico():
     temperaturas = []
 
     acumulado = 0
-    for etapa in etapas:
-tempo = etapa["dados"].get("tempo", 0)
-temp = etapa["dados"].get("temperatura", 0)
+for etapa in etapas:
+    tempo = etapa["dados"].get("tempo", 0)
+    temp = etapa["dados"].get("temperatura", 0)
 
-acumulado += tempo
-tempos.append(acumulado)
-temperaturas.append(temp)
+    acumulado += tempo
+    tempos.append(acumulado)
+    temperaturas.append(temp)
+
 
 
     # Corrigir lista para o mesmo comprimento
@@ -195,15 +196,17 @@ def imprimir_pdf():
     c.setFont("Helvetica", 11)
 
     y = 720
-    for etapa in etapas:
-resumo = dados.get("resumo", "")
-linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
+for etapa in etapas:
+    dados = etapa["dados"]
+    resumo = dados.get("resumo", "")
+    linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
+    
+    c.drawString(50, y, linha)
+    y -= 18
+    if y < 100:
+        c.showPage()
+        y = 750
 
-        c.drawString(50, y, linha)
-        y -= 18
-        if y < 100:
-            c.showPage()
-            y = 750
 
     c.drawString(50, y - 25, f"Tempo total: {calcular_tempo_total()} h")
     c.drawString(50, y - 40, f"Relação de banho: {relacao_banho}")
