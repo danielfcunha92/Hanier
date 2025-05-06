@@ -123,8 +123,9 @@
 <script>
 function abrirModal() {
   document.getElementById("modal").style.display = "flex";
-  mostrarCamposEtapa();
+  mostrarCamposEtapa();  // <- Isso garante que os campos apareçam
 }
+
 
 function fecharModal() {
   document.getElementById("modal").style.display = "none";
