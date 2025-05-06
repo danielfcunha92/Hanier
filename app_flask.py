@@ -1,4 +1,3 @@
-```python
 import io
 import json
 import os
@@ -12,18 +11,20 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret')
 LOGO_PATH = 'static/logo_hanier.png'
 
+
 @app.before_request
 def init_session():
     session.setdefault('etapas', [])
     session.setdefault('receita', [])
     session.setdefault('titulo', 'Gráficos de Tingimento')
 
+
 @app.route('/')
 def index():
     etapas = session.get('etapas', [])
-    # calcula tempo total, tratando casos sem 'tempo'
     total_min = sum(
-        et.get('dados', {}).get('tempo', 0) for et in etapas
+        et.get('dados', {}).get('tempo', 0)
+        for et in etapas
     )
     horas, minutos = divmod(int(total_min), 60)
     tempo_str = f"{horas}:{minutos:02d}"
@@ -36,19 +37,20 @@ def index():
         receita_json=json.dumps(session.get('receita', []))
     )
 
+
 @app.route('/adicionar_etapa', methods=['POST'])
 def adicionar_etapa():
     data = request.get_json()
-    # data deve ter 'tipo' e 'dados'
     session['etapas'].append(data)
     session.modified = True
-    # retorna novo total
     total_min = sum(
-        et.get('dados', {}).get('tempo', 0) for et in session['etapas']
+        et.get('dados', {}).get('tempo', 0)
+        for et in session['etapas']
     )
     horas, minutos = divmod(int(total_min), 60)
     tempo_str = f"{horas}:{minutos:02d}"
     return jsonify(success=True, tempo_total=tempo_str)
+
 
 @app.route('/editar_etapa/<int:idx>', methods=['POST'])
 def editar_etapa(idx):
@@ -58,12 +60,14 @@ def editar_etapa(idx):
         session.modified = True
     return jsonify(success=True)
 
+
 @app.route('/excluir_etapa/<int:idx>', methods=['POST'])
 def excluir_etapa(idx):
     if 0 <= idx < len(session['etapas']):
         session['etapas'].pop(idx)
         session.modified = True
     return jsonify(success=True)
+
 
 @app.route('/subir_etapa/<int:idx>', methods=['POST'])
 def subir_etapa(idx):
@@ -73,6 +77,7 @@ def subir_etapa(idx):
         session.modified = True
     return jsonify(success=True)
 
+
 @app.route('/descer_etapa/<int:idx>', methods=['POST'])
 def descer_etapa(idx):
     et = session['etapas']
@@ -81,11 +86,13 @@ def descer_etapa(idx):
         session.modified = True
     return jsonify(success=True)
 
+
 @app.route('/limpar_etapas', methods=['POST'])
 def limpar_etapas():
     session['etapas'].clear()
     session.modified = True
     return jsonify(success=True)
+
 
 @app.route('/atualizar_titulo', methods=['POST'])
 def atualizar_titulo():
@@ -93,6 +100,7 @@ def atualizar_titulo():
     session['titulo'] = data.get('titulo', session['titulo'])
     session.modified = True
     return jsonify(success=True)
+
 
 @app.route('/salvar_dados')
 def salvar_dados():
@@ -104,7 +112,13 @@ def salvar_dados():
     buf = io.BytesIO()
     buf.write(json.dumps(dados, indent=2).encode())
     buf.seek(0)
-    return send_file(buf, mimetype='application/json', download_name='dados_tingimento.json', as_attachment=True)
+    return send_file(
+        buf,
+        mimetype='application/json',
+        download_name='dados_tingimento.json',
+        as_attachment=True
+    )
+
 
 @app.route('/carregar_dados', methods=['POST'])
 def carregar_dados():
@@ -118,6 +132,7 @@ def carregar_dados():
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, error=str(e))
+
 
 @app.route('/grafico.png')
 def grafico_png():
@@ -134,7 +149,7 @@ def grafico_png():
         tempos.append(acum)
         temps.append(temp)
     buf = io.BytesIO()
-    plt.figure(figsize=(8,4))
+    plt.figure(figsize=(8, 4))
     plt.plot(tempos, temps, marker='o')
     plt.xlabel('Tempo (min)')
     plt.ylabel('Temperatura (°C)')
@@ -142,6 +157,7 @@ def grafico_png():
     plt.savefig(buf, format='png')
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
+
 
 @app.route('/imprimir_pdf', methods=['POST'])
 def imprimir_pdf():
@@ -156,38 +172,55 @@ def imprimir_pdf():
         pass
     c.setFont('Helvetica-Bold', 14)
     c.drawString(50, 800, session.get('titulo', ''))
+
     # Gráfico inline
     chart_buf = io.BytesIO()
-    tempos=[0]; temps=[session['etapas'][0].get('dados',{}).get('temperatura',0)]
-    acum=0
+    tempos = [0]
+    temps = [session['etapas'][0].get('dados', {}).get('temperatura', 0) if session['etapas'] else 0]
+    acum = 0
     for et in session['etapas']:
         t = et.get('dados', {}).get('tempo', 0)
         temp = et.get('dados', {}).get('temperatura', 0)
-        acum+=t; tempos.append(acum); temps.append(temp)
-    plt.figure(figsize=(8,4)); plt.plot(tempos, temps, marker='o'); plt.tight_layout(); plt.savefig(chart_buf, format='png'); chart_buf.seek(0)
-    c.drawImage(ImageReader(chart_buf), 50, 500, width=500, height=250)
-    y=480; c.setFont('Helvetica', 11)
+        acum += t
+        tempos.append(acum)
+        temps.append(temp)
+    plt.figure(figsize=(8, 4))
+    plt.plot(tempos, temps, marker='o')
+    plt.tight_layout()
+    plt.savefig(chart_buf, format='png')
+    chart_buf.seek(0)
+    c.drawImage(
+        ImageReader(chart_buf),
+        50, 500,
+        width=500, height=250
+    )
+
+    y = 480
+    c.setFont('Helvetica', 11)
     for et in session['etapas']:
-        txt = f"- {et.get('tipo','')}: {et.get('dados',{}).get('resumo','')} ({et.get('dados',{}).get('tempo',0)} min)"
-        c.drawString(50, y, txt); y-=15
-        if y<100: c.showPage(); y=800
-    total_min = sum(et.get('dados',{}).get('tempo',0) for et in session['etapas'])
+        txt = f"- {et.get('tipo', '')}: {et.get('dados', {}).get('resumo', '')} ({et.get('dados', {}).get('tempo', 0)} min)"
+        c.drawString(50, y, txt)
+        y -= 15
+        if y < 100:
+            c.showPage()
+            y = 800
+
+    total_min = sum(et.get('dados', {}).get('tempo', 0) for et in session['etapas'])
     h, m = divmod(int(total_min), 60)
-    c.drawString(50, y-20, f"Tempo total: {h}:{m:02d}")
+    c.drawString(50, y - 20, f"Tempo total: {h}:{m:02d}")
+
     c.showPage()
     c.setFont('Helvetica-Bold', 12)
     c.drawString(50, 800, 'Receita' + (' e Custo' if com_custo else ''))
-    # TODO: tabela de receita
-    c.save(); buf.seek(0)
-    return send_file(buf, mimetype='application/pdf', download_name='processo.pdf')
+    c.save()
+
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/pdf',
+        download_name='processo.pdf'
+    )
+
 
 if __name__ == '__main__':
     app.run(debug=True)
-```
-
-**Principais ajustes**:
-
-* `index()` agora usa `.get('dados',{}).get('tempo',0)` em vez de acessar diretamente, evitando `KeyError`.
-* Todas as leituras de `dados['tempo']` e `dados['temperatura']` protegem contra ausência da chave.
-
-Deploy novamente e o 500 deve desaparecer. Qualquer outro erro, me avise!\`\`\`
