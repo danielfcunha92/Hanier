@@ -180,18 +180,24 @@ else if (tipo === "Injetar Produto") {
   const produto = document.getElementById("produto").value;
   const agua = document.getElementById("agua_inj").value;
 
-  const tempo = 2;
-  let temperatura = 0;
+const tempo = 2;
+let temperatura = 0;
 
-  try {
-    const tabela = document.querySelectorAll("table tr");
-    if (tabela.length > 1) {
-      const ultimaLinha = tabela[tabela.length - 1];
-      const celulas = ultimaLinha.querySelectorAll("td");
-      const tempStr = celulas[2]?.textContent;
-      temperatura = parseFloat(tempStr) || 0;
+try {
+    const linhas = document.querySelectorAll("table tr");
+    if (linhas.length > 1) {
+        const ultima = linhas[linhas.length - 1];
+        const tipo = ultima.cells[0].textContent;
+        const resumo = ultima.cells[1].textContent;
+
+        if (resumo.includes("Quente")) {
+            temperatura = 40;
+        } else if (resumo.includes("Fria")) {
+            temperatura = 25;
+        }
     }
-  } catch {}
+} catch {}
+
 
   resumo = `${produto} com água ${agua}`;
   dados = { resumo, tempo, temperatura };
