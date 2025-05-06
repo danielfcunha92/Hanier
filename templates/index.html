@@ -186,13 +186,16 @@
       };
     }
 
+
     function lastStepTemp() {
-      const rows = document.querySelectorAll('#tabela-etapas tr[data-index]');
-      if (rows.length === 0) return 0;
-      const lastRow = rows[rows.length - 1];
-      // célula de tempo está na terceira coluna (índice 2)
-      const tempCell = lastRow.cells[2].textContent;
-      return parseFloat(tempCell) || 0;
+      // Se não houve etapas, retorna 0
+      if (!etapasData || etapasData.length === 0) return 0;
+      // Pega o objeto JS da última etapa
+      const last = etapasData[etapasData.length - 1];
+      // Retorna de verdade o dado .temperatura (já numérico)
+      return last.dados && last.dados.temperatura != null
+        ? Number(last.dados.temperatura)
+        : 0;
     }
 
 
