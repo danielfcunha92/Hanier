@@ -54,10 +54,11 @@ class ReceitaItem:
 
 # Funções auxiliares
 def calcular_tempo_total():
-    total = sum([etapa["tempo"] for etapa in etapas])
+    total = sum([etapa["dados"]["tempo"] for etapa in etapas])
     horas = int(total // 60)
     minutos = int(total % 60)
     return f"{horas}:{minutos:02d}"
+
 
 def etapas_to_list():
     return etapas  # etapas já é uma lista de dicionários
