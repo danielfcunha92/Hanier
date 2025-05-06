@@ -245,14 +245,18 @@
           break;
         }
         case 'Termoregulação': {
-          const t0 = parseFloat(document.getElementById('temp_atual').value)||0;
-          const t1 = parseFloat(document.getElementById('temp_final').value)||0;
-          const g  = parseFloat(document.getElementById('gradiente').value)||5;
-          tempo= Math.abs(t1-t0)/g;
-          temperatura = t1;
-          resumo = `${t1>t0?'Aquecer':'Resfriar'} de ${t0}→${t1}°C, ${g}°C/min`;
+          const t0        = parseFloat(document.getElementById('temp_atual').value) || 0;
+          const t1        = parseFloat(document.getElementById('temp_final').value) || 0;
+          const gradInput = parseFloat(document.getElementById('gradiente').value);
+          // se digitou 0 ou deixou em branco, usa 5°C/min para o cálculo
+          const gCalc     = (gradInput === 0 || isNaN(gradInput)) ? 5 : gradInput;
+          tempo            = Math.abs(t1 - t0) / gCalc;
+          temperatura      = t1;
+          // mas no resumo mostramos o valor original (até 0)
+          resumo           = `${t1>t0?'Aquecer':'Resfriar'} de ${t0}→${t1}°C, ${gradInput}°C/min`;
           break;
         }
+
         case 'Patamar': {
           const tp = parseFloat(document.getElementById('temp_pat').value)||0;
           const tm = parseFloat(document.getElementById('tempo_pat').value)||0;

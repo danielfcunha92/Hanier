@@ -149,14 +149,27 @@ def grafico_png():
         tempos.append(acum)
         temps.append(temp)
     buf = io.BytesIO()
-    plt.figure(figsize=(8, 4))
-    plt.plot(tempos, temps, marker='o')
-    plt.xlabel('Tempo (min)')
-    plt.ylabel('Temperatura (°C)')
+    fig, ax = plt.subplots(figsize=(8,4))
+    ax.plot(tempos, temps, marker='o')
+    ax.set_xlabel('Tempo (min)')
+    ax.set_ylabel('Temperatura (°C)')
+
+    # ─── AQUI VEM A CAIXINHA COM O TEMPO TOTAL ───
+    h, m = divmod(int(acum), 60)
+    ax.text(
+        0.98, 0.98,
+        f"Tempo total: {h}:{m:02d}",
+        ha='right', va='top',
+        transform=ax.transAxes,
+        bbox=dict(facecolor='white', edgecolor='black', pad=4)
+    )
+    # ─────────────────────────────────────────────
+
     plt.tight_layout()
-    plt.savefig(buf, format='png')
+    fig.savefig(buf, format='png')
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
+
 
 
 @app.route('/imprimir_pdf', methods=['POST'])
