@@ -84,8 +84,7 @@
     let selectedIndex = null;
 
     function selecionarLinha(tr) {
-      document.querySelectorAll('#tabela-etapas tr.selected')
-              .forEach(r => r.classList.remove('selected'));
+      document.querySelectorAll('#tabela-etapas tr.selected').forEach(r => r.classList.remove('selected'));
       tr.classList.add('selected');
       selectedIndex = parseInt(tr.dataset.index);
     }
@@ -94,6 +93,7 @@
       document.getElementById('modal').style.display = 'flex';
       mostrarCamposEtapa();
     }
+
     function fecharModal() {
       document.getElementById('modal').style.display = 'none';
     }
@@ -117,8 +117,6 @@
             <input id="produto" type="text" placeholder="Nome do produto">
             <label>Água:</label>
             <select id="agua_inj"><option>Limpa</option><option>Retorno</option></select>
-            <label>Tempo (min):</label>
-            <input id="tempo_inj" type="number" placeholder="Ex: 2">
           `;
           break;
         case 'Dosagem de Produto':
@@ -161,9 +159,8 @@
           `;
           document.getElementById('aviso').onchange = e => {
             document.getElementById('ph-campos').innerHTML =
-              e.target.value === 'Medir pH'
-                ? '<label>Faixa de pH:</label><input id="faixa_ph" type="text">'
-                : '';
+              e.target.value === 'Medir pH' ?
+              '<label>Faixa de pH:</label><input id="faixa_ph" type="text">' : '';
           };
           break;
         default:
@@ -189,7 +186,7 @@
           const tempPrev = lastStepTemp();
           const prod     = document.getElementById('produto').value;
           const aguaInj  = document.getElementById('agua_inj').value;
-          tempo       = Number(document.getElementById('tempo_inj').value) || 2;
+          tempo       = 2;
           temperatura = tempPrev !== null ? tempPrev : 25;
           resumo      = `${prod}, água ${aguaInj}`;
           dados       = { resumo, tempo, temperatura };
@@ -274,7 +271,7 @@
       const et = etapasData[selectedIndex];
       document.getElementById('tipo').value = et.tipo;
       abrirModal(); mostrarCamposEtapa();
-      // preencha campos conforme et.dados aqui, se quiser
+      // preencha campos conforme et.dados aqui
     }
     async function excluirEtapa()   { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
     async function subirEtapa()     { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
