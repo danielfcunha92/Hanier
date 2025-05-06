@@ -20,257 +20,272 @@
   </style>
 </head>
 <body>
-<div class="container">
-  <img src="{{ url_for('static', filename='logo_hanier.png') }}" alt="Logo Hanier" style="float: right; width: 160px; margin-top: -10px; margin-right: 10px;">
-  <h2>{{ titulo }}</h2>
-  <div style="margin-bottom: 15px;">
-    <button onclick="abrirModal()">Nova Etapa</button>
-    <button onclick="editarEtapa()">Editar Etapa</button>
-    <button onclick="excluirEtapa()">Excluir Etapa</button>
-    <button onclick="subirEtapa()">↑ Subir</button>
-    <button onclick="descerEtapa()">↓ Descer</button>
-    <button onclick="limparEtapas()">Limpar</button>
-    <button onclick="editarTitulo()">Editar Título</button>
-    <button onclick="salvarEtapas()">Salvar Etapas</button>
-    <button onclick="carregarEtapas()">Carregar Etapas</button>
-    <button onclick="imprimir(false)">Imprimir</button>
-    <button onclick="imprimir(true)">Receita</button>
+  <div class="container">
+    <img src="{{ url_for('static', filename='logo_hanier.png') }}" alt="Logo Hanier"
+         style="float: right; width: 160px; margin-top: -10px; margin-right: 10px;">
+    <h2>{{ titulo }}</h2>
+    <div style="margin-bottom: 15px;">
+      <button onclick="abrirModal()">Nova Etapa</button>
+      <button onclick="editarEtapa()">Editar Etapa</button>
+      <button onclick="excluirEtapa()">Excluir Etapa</button>
+      <button onclick="subirEtapa()">↑ Subir</button>
+      <button onclick="descerEtapa()">↓ Descer</button>
+      <button onclick="limparEtapas()">Limpar</button>
+      <button onclick="editarTitulo()">Editar Título</button>
+      <button onclick="salvarEtapas()">Salvar Etapas</button>
+      <button onclick="carregarEtapas()">Carregar Etapas</button>
+      <button onclick="imprimir(false)">Imprimir</button>
+      <button onclick="imprimir(true)">Receita</button>
+    </div>
+
+    <table id="tabela-etapas">
+      <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
+      {% for etapa in etapas %}
+      <tr data-index="{{ loop.index0 }}" onclick="selecionarLinha(this)">
+        <td>{{ etapa.tipo }}</td>
+        <td>{{ etapa.dados.resumo }}</td>
+        <td>{{ etapa.dados.tempo }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <p>Tempo total: {{ tempo_total }}</p>
+    <h3>Gráfico de Temperatura × Tempo</h3>
+    <button onclick="gerarGrafico()">Gerar Gráfico</button>
+    <img id="grafico" src="" style="display:none; width:800px; margin-top:10px;" alt="Gráfico de Tingimento">
   </div>
 
-  <table id="tabela-etapas">
-    <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
-    {% for etapa in etapas %}
-    <tr data-index="{{ loop.index0 }}" onclick="selecionarLinha(this)">
-      <td>{{ etapa.tipo }}</td>
-      <td>{{ etapa.dados.resumo }}</td>
-      <td>{{ etapa.dados.tempo }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-
-  <p>Tempo total: {{ tempo_total }}</p>
-  <h3>Gráfico de Temperatura × Tempo</h3>
-  <button onclick="gerarGrafico()">Gerar Gráfico</button>
-  <img id="grafico" src="" style="display:none; width:800px; margin-top:10px;" alt="Gráfico de Tingimento">
-</div>
-
-<div id="modal">
-  <div id="modal-content">
-    <h3>Nova Etapa</h3>
-    <label>Tipo de Etapa:</label>
-    <select id="tipo" onchange="mostrarCamposEtapa()">
-      <option value="">– selecione –</option>
-      <option value="Encher Máquina">Encher Máquina</option>
-      <option value="Injetar Produto">Injetar Produto</option>
-      <option value="Dosagem de Produto">Dosagem de Produto</option>
-      <option value="Termoregulação">Termoregulação</option>
-      <option value="Patamar">Patamar</option>
-      <option value="Transbordo">Transbordo</option>
-      <option value="Soltar Banho">Soltar Banho</option>
-      <option value="Aviso">Aviso</option>
-    </select>
-    <div id="campos-etapa"></div>
-    <button onclick="confirmarEtapa()">Confirmar</button>
-    <button onclick="fecharModal()">Cancelar</button>
+  <div id="modal">
+    <div id="modal-content">
+      <h3>Nova Etapa</h3>
+      <label>Tipo de Etapa:</label>
+      <select id="tipo" onchange="mostrarCamposEtapa()">
+        <option value="">– selecione –</option>
+        <option value="Encher Máquina">Encher Máquina</option>
+        <option value="Injetar Produto">Injetar Produto</option>
+        <option value="Dosagem de Produto">Dosagem de Produto</option>
+        <option value="Termoregulação">Termoregulação</option>
+        <option value="Patamar">Patamar</option>
+        <option value="Transbordo">Transbordo</option>
+        <option value="Soltar Banho">Soltar Banho</option>
+        <option value="Aviso">Aviso</option>
+      </select>
+      <div id="campos-etapa"></div>
+      <button onclick="confirmarEtapa()">Confirmar</button>
+      <button onclick="fecharModal()">Cancelar</button>
+    </div>
   </div>
-</div>
 
-<input type="file" id="fileInput" accept=".json" style="display:none" onchange="uploadDados(event)">
+  <input type="file" id="fileInput" accept=".json" style="display:none" onchange="uploadDados(event)">
 
-<script>
-const etapasData = {{ etapas_json | safe }};
-const receitaData = {{ receita_json | safe }};
-let selectedIndex = null;
+  <script>
+    const etapasData  = {{ etapas_json  | safe }};
+    const receitaData = {{ receita_json | safe }};
+    let selectedIndex = null;
 
-function selecionarLinha(tr) {
-  document.querySelectorAll('#tabela-etapas tr.selected')
-    .forEach(r => r.classList.remove('selected'));
-  tr.classList.add('selected');
-  selectedIndex = parseInt(tr.dataset.index);
-}
+    function selecionarLinha(tr) {
+      document.querySelectorAll('#tabela-etapas tr.selected')
+              .forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+      selectedIndex = parseInt(tr.dataset.index);
+    }
 
-function abrirModal() {
-  document.getElementById('modal').style.display = 'flex';
-  mostrarCamposEtapa();
-}
+    function abrirModal() {
+      document.getElementById('modal').style.display = 'flex';
+      mostrarCamposEtapa();
+    }
+    function fecharModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
 
-function fecharModal() {
-  document.getElementById('modal').style.display = 'none';
-}
+    function mostrarCamposEtapa() {
+      const tipo = document.getElementById('tipo').value;
+      const campos = document.getElementById('campos-etapa');
+      campos.innerHTML = '';
+      switch (tipo) {
+        case 'Encher Máquina':
+          campos.innerHTML = `
+            <label>Água:</label>
+            <select id="agua"><option>Quente</option><option>Fria</option></select>
+            <label>Relação de Banho (1:x):</label>
+            <input id="relacao" type="number" placeholder="Ex: 10">
+          `;
+          break;
+        case 'Injetar Produto':
+          campos.innerHTML = `
+            <label>Produto:</label>
+            <input id="produto" type="text" placeholder="Nome do produto">
+            <label>Água:</label>
+            <select id="agua_inj"><option>Limpa</option><option>Retorno</option></select>
+            <label>Tempo (min):</label>
+            <input id="tempo_inj" type="number" placeholder="Ex: 2">
+          `;
+          break;
+        case 'Dosagem de Produto':
+          campos.innerHTML = `
+            <label>Tempo de Dosagem (min):</label>
+            <input id="tempo_dos" type="number" placeholder="Ex: 5">
+            <label>Curva (opcional):</label>
+            <input id="curva_dos" type="text" placeholder="Ex: rampa">
+          `;
+          break;
+        case 'Termoregulação':
+          campos.innerHTML = `
+            <label>Temp. atual (°C):</label><input id="temp_atual" type="number">
+            <label>Temp. final (°C):</label><input id="temp_final" type="number">
+            <label>Gradiente (°C/min):</label><input id="gradiente" type="number" placeholder="Ex: 3">
+          `;
+          break;
+        case 'Patamar':
+          campos.innerHTML = `
+            <label>Temperatura (°C):</label><input id="temp_pat" type="number">
+            <label>Tempo (min):</label><input id="tempo_pat" type="number">
+          `;
+          break;
+        case 'Transbordo':
+          campos.innerHTML = `
+            <label>Relação (1:x):</label><input id="rt_val" type="number">
+            <label>Temp. Inicial (°C):</label><input id="ti" type="number">
+            <label>Temp. Final (°C):</label><input id="tf" type="number">
+            <label>Tempo (min):</label><input id="tempo_tr" type="number">
+          `;
+          break;
+        case 'Soltar Banho':
+          campos.innerHTML = '<p>Resfriamento automático em 3 min</p>';
+          break;
+        case 'Aviso':
+          campos.innerHTML = `
+            <label>Aviso:</label>
+            <select id="aviso"><option>Amostra</option><option>Medir Densidade</option><option>Medir pH</option></select>
+            <div id="ph-campos"></div>
+          `;
+          document.getElementById('aviso').onchange = e => {
+            document.getElementById('ph-campos').innerHTML =
+              e.target.value === 'Medir pH'
+                ? '<label>Faixa de pH:</label><input id="faixa_ph" type="text">'
+                : '';
+          };
+          break;
+        default:
+          campos.innerHTML = '';
+      }
+    }
 
-function mostrarCamposEtapa() {
-  const tipo = document.getElementById('tipo').value;
-  const campos = document.getElementById('campos-etapa');
-  campos.innerHTML = '';
-  switch (tipo) {
-    case 'Encher Máquina':
-      campos.innerHTML = `
-        <label>Água:</label>
-        <select id="agua"><option>Quente</option><option>Fria</option></select>
-        <label>Relação de Banho (1:x):</label>
-        <input id="relacao" type="number" placeholder="Ex: 10">
-      `;
-      break;
-    case 'Injetar Produto':
-      campos.innerHTML = `
-        <label>Produto:</label>
-        <input id="produto" type="text" placeholder="Nome do produto">
-        <label>Água:</label>
-        <select id="agua_inj"><option>Limpa</option><option>Retorno</option></select>
-      `;
-      break;
-    case 'Dosagem de Produto':
-      campos.innerHTML = `
-        <label>Tempo de Dosagem (min):</label>
-        <input id="tempo_dos" type="number" placeholder="Ex: 5">
-        <label>Curva (opcional):</label>
-        <input id="curva_dos" type="text" placeholder="Ex: rampa">
-      `;
-      break;
-    case 'Termoregulação':
-      campos.innerHTML = `
-        <label>Temp. atual (°C):</label><input id="temp_atual" type="number">
-        <label>Temp. final (°C):</label><input id="temp_final" type="number">
-        <label>Gradiente (°C/min):</label><input id="gradiente" type="number" placeholder="Ex: 3">
-      `;
-      break;
-    case 'Patamar':
-      campos.innerHTML = `
-        <label>Temperatura (°C):</label><input id="temp_pat" type="number">
-        <label>Tempo (min):</label><input id="tempo_pat" type="number">
-      `;
-      break;
-    case 'Transbordo':
-      campos.innerHTML = `
-        <label>Relação (1:x):</label><input id="rt_val" type="number">
-        <label>Temp. Inicial (°C):</label><input id="ti" type="number">
-        <label>Temp. Final (°C):</label><input id="tf" type="number">
-        <label>Tempo (min):</label><input id="tempo_tr" type="number">
-      `;
-      break;
-    case 'Soltar Banho':
-      campos.innerHTML = '<p>Resfriamento automático em 3 min</p>';
-      break;
-    case 'Aviso':
-      campos.innerHTML = `
-        <label>Aviso:</label>
-        <select id="aviso"><option>Amostra</option><option>Medir Densidade</option><option>Medir pH</option></select>
-        <div id="ph-campos"></div>
-      `;
-      document.getElementById('aviso').onchange = e => {
-        const phcam = document.getElementById('ph-campos');
-        phcam.innerHTML = e.target.value === 'Medir pH'
-          ? '<label>Faixa de pH:</label><input id="faixa_ph" type="text">'
-          : '';
-      };
-      break;
-    default:
-      break;
-  }
-}
+    async function confirmarEtapa() {
+      const tipo = document.getElementById('tipo').value;
+      let dados = {}, tempo = 0, temperatura = 0, resumo = '';
 
-async function confirmarEtapa() {
-  const tipo = document.getElementById('tipo').value;
-  let dados = {}, tempo = 0, temperatura = 0, resumo = '';
-  switch (tipo) {
-    case 'Encher Máquina':
-      const agua = document.getElementById('agua').value;
-      const rel = document.getElementById('relacao').value;
-      tempo = 3; temperatura = agua === 'Quente' ? 40 : 25;
-      resumo = `Água ${agua}, 1:${rel}`;
-      dados = { resumo, tempo, temperatura };
-      break;
+      switch (tipo) {
+        case 'Encher Máquina': {
+          const agua = document.getElementById('agua').value;
+          const rel  = document.getElementById('relacao').value;
+          tempo       = 3;
+          temperatura = agua === 'Quente' ? 40 : 25;
+          resumo      = `Água ${agua}, 1:${rel}`;
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Injetar Produto': {
+          const tempPrev = lastStepTemp();
+          const prod     = document.getElementById('produto').value;
+          const aguaInj  = document.getElementById('agua_inj').value;
+          tempo       = Number(document.getElementById('tempo_inj').value) || 2;
+          temperatura = tempPrev !== null ? tempPrev : 25;
+          resumo      = `${prod}, água ${aguaInj}`;
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Dosagem de Produto': {
+          const tdPrev   = parseFloat(document.getElementById('tempo_dos').value) || 0;
+          const curva    = document.getElementById('curva_dos').value;
+          const tempPrev = lastStepTemp();
+          tempo       = tdPrev;
+          temperatura = tempPrev !== null ? tempPrev : 25;
+          resumo      = `Dosagem: ${tdPrev} min${curva ? `, curva ${curva}` : ''}`;
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Termoregulação': {
+          const t0  = parseFloat(document.getElementById('temp_atual').value) || 0;
+          const t1  = parseFloat(document.getElementById('temp_final').value) || 0;
+          const g   = parseFloat(document.getElementById('gradiente').value) || 5;
+          const diff= Math.abs(t1 - t0);
+          tempo       = diff / g;
+          const acao  = t1 > t0 ? 'Aquecer' : 'Resfriar';
+          resumo      = `${acao} de ${t0}→${t1}°C, ${g}°C/min`;
+          dados       = { resumo, tempo: Math.round(tempo), temperatura: t1 };
+          break;
+        }
+        case 'Patamar': {
+          const tp = parseFloat(document.getElementById('temp_pat').value) || 0;
+          const tm = parseFloat(document.getElementById('tempo_pat').value) || 0;
+          tempo       = tm;
+          temperatura = tp;
+          resumo      = `${tp}°C por ${tm} min`;
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Transbordo': {
+          const rb  = parseFloat(document.getElementById('rt_val').value) || 0;
+          const ti  = parseFloat(document.getElementById('ti').value) || 0;
+          const tf  = parseFloat(document.getElementById('tf').value) || 0;
+          const ttr = parseFloat(document.getElementById('tempo_tr').value) || 0;
+          tempo       = ttr;
+          temperatura = tf;
+          resumo      = `1:${rb}, ${ti}→${tf}°C, ${ttr} min`;
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Soltar Banho': {
+          tempo       = 3;
+          temperatura = 0;
+          resumo      = 'Resfriamento automático';
+          dados       = { resumo, tempo, temperatura };
+          break;
+        }
+        case 'Aviso': {
+          const av = document.getElementById('aviso').value;
+          const ph = document.getElementById('faixa_ph')?.value;
+          tempo  = 5;
+          resumo = ph ? `${av} (pH ${ph})` : av;
+          dados  = { resumo, tempo, temperatura: 0 };
+          break;
+        }
+      }
 
+      await fetch('/adicionar_etapa', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ tipo, dados })
+      });
 
-   case 'Injetar Produto': {
-     const prod    = document.getElementById('produto').value;
-     const aguaInj = document.getElementById('agua_inj').value;
-     // sempre herda a temperatura da etapa anterior:
-     const tempPrev = lastStepTemp();
-     tempo       = Number(document.getElementById('tempo_inj')?.value || 2);
-     temperatura = (tempPrev !== null) ? tempPrev : 25;
-     resumo      = `${prod}, água ${aguaInj}`;
-     dados       = { resumo, tempo, temperatura };
-     break;
-   }
+      fecharModal();
+      location.reload();
+    }
 
+    function lastStepTemp() {
+      const trs = document.querySelectorAll('#tabela-etapas tr');
+      if (trs.length < 2) return null;
+      return parseFloat(trs[trs.length - 1].cells[2].textContent) || null;
+    }
 
-   case 'Dosagem de Produto': {
-     const tdPrev = parseFloat(document.getElementById('tempo_dos').value) || 0;
-     const curva  = document.getElementById('curva_dos').value;
-     const tempPrev = lastStepTemp();
-     tempo       = tdPrev;
-     temperatura = (tempPrev !== null) ? tempPrev : 25;
-     resumo      = `Dosagem: ${tdPrev} min${curva?`, curva ${curva}`:``}`;
-     dados       = { resumo, tempo, temperatura };
-     break;
-   }
-
-
-    case 'Termoregulação':
-      const t0 = parseFloat(document.getElementById('temp_atual').value) || 0;
-      const t1 = parseFloat(document.getElementById('temp_final').value) || 0;
-      const g  = parseFloat(document.getElementById('gradiente').value) || 5;
-      const diff = Math.abs(t1 - t0);
-      tempo = diff / g;
-      const acao = t1 > t0 ? 'Aquecer' : 'Resfriar';
-      resumo = `${acao} de ${t0}→${t1}°C, ${g}°C/min`;
-      dados = { resumo, tempo: Math.round(tempo), temperatura: t1 };
-      break;
-    case 'Patamar':
-      const tp = parseFloat(document.getElementById('temp_pat').value) || 0;
-      const tm = parseFloat(document.getElementById('tempo_pat').value) || 0;
-      tempo = tm; temperatura = tp;
-      resumo = `${tp}°C por ${tm} min`;
-      dados = { resumo, tempo, temperatura };
-      break;
-    case 'Transbordo':
-      const rb = parseFloat(document.getElementById('rt_val').value) || 0;
-      const ti = parseFloat(document.getElementById('ti').value) || 0;
-      const tf = parseFloat(document.getElementById('tf').value) || 0;
-      const ttr= parseFloat(document.getElementById('tempo_tr').value) || 0;
-      tempo = ttr; temperatura = tf;
-      resumo = `1:${rb}, ${ti}→${tf}°C, ${ttr} min`;
-      dados = { resumo, tempo, temperatura };
-      break;
-    case 'Soltar Banho':
-      tempo = 3; temperatura = 0;
-      resumo = 'Resfriamento automático';
-      dados = { resumo, tempo, temperatura };
-      break;
-    case 'Aviso':
-      const av = document.getElementById('aviso').value;
-      const ph = document.getElementById('faixa_ph')?.value;
-      tempo = 5;
-      resumo = ph ? `${av} (pH ${ph})` : av;
-      dados = { resumo, tempo, temperatura: 0 };
-      break;
-  }
-  await fetch('/adicionar_etapa', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ tipo, dados }) });
-  fecharModal(); location.reload();
-}
-
-function lastStepTemp() {
-  const trs = document.querySelectorAll('#tabela-etapas tr');
-  if (trs.length < 2) return null;
-  return parseFloat(trs[trs.length-1].cells[2].textContent) || null;
-}
-
-async function editarEtapa() {
-  if (selectedIndex === null) return alert('Selecione uma etapa.');
-  const et = etapasData[selectedIndex];
-  document.getElementById('tipo').value = et.tipo;
-  abrirModal(); mostrarCamposEtapa();
-  // após abrir, preencha campos (similar à confirmação)
-}
-async function excluirEtapa() { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
-async function subirEtapa() { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
-async function descerEtapa(){ if(selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
-async function limparEtapas(){ if(!confirm('Remover todas as etapas?')) return; await fetch('/limpar_etapas',{method:'POST'}); location.reload(); }
-async function editarTitulo(){ const n=prompt('Novo título:', '{{ titulo }}'); if(n!=null) { await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})}); location.reload(); }}
-function salvarEtapas(){ window.location='/salvar_dados'; }
-function carregarEtapas(){ document.getElementById('fileInput').click(); }
-async function uploadDados(evt){ const f=evt.target.files[0]; if(!f) return; const fd=new FormData(); fd.append('file',f); const r=await fetch('/carregar_dados',{method:'POST',body:fd}); const j=await r.json(); if(j.success) location.reload(); else alert('Erro:'+j.error); }
-async function imprimir(comCusto){ const r=await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:comCusto})}); const bd=await r.blob(); window.open(URL.createObjectURL(bd)); }
-function gerarGrafico(){ const img=document.getElementById('grafico'); img.src='/grafico.png?'+Date.now(); img.style.display='block'; }
-</script>
+    async function editarEtapa() {
+      if (selectedIndex === null) return alert('Selecione uma etapa.');
+      const et = etapasData[selectedIndex];
+      document.getElementById('tipo').value = et.tipo;
+      abrirModal(); mostrarCamposEtapa();
+      // preencha campos conforme et.dados aqui, se quiser
+    }
+    async function excluirEtapa()   { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function subirEtapa()     { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function descerEtapa()    { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function limparEtapas()   { if (!confirm('Remover todas as etapas?')) return; await fetch('/limpar_etapas',{method:'POST'}); location.reload(); }
+    async function editarTitulo()   { const n = prompt('Novo título:', '{{ titulo }}'); if (n!=null) { await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})}); location.reload(); }}
+    function salvarEtapas()         { window.location = '/salvar_dados'; }
+    function carregarEtapas()       { document.getElementById('fileInput').click(); }
+    async function uploadDados(evt){ const f=evt.target.files[0]; if(!f) return; const fd=new FormData(); fd.append('file',f); const r=await fetch('/carregar_dados',{method:'POST',body:fd}); const j=await r.json(); if(j.success) location.reload(); else alert('Erro:'+j.error); }
+    async function imprimir(c)     { const r=await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:c})}); const b=await r.blob(); window.open(URL.createObjectURL(b)); }
+    function gerarGrafico()         { const img=document.getElementById('grafico'); img.src='/grafico.png?'+Date.now(); img.style.display='block'; }
+  </script>
+</body>
+</html>
