@@ -54,7 +54,7 @@ class ReceitaItem:
 
 # Funções auxiliares
 def calcular_tempo_total():
-    total = sum([etapa.tempo for etapa in etapas])
+    total = sum([etapa["tempo"] for etapa in etapas])
     horas = int(total // 60)
     minutos = int(total % 60)
     return f"{horas}:{minutos:02d}"
@@ -68,7 +68,7 @@ def receita_to_list():
 
 def carregar_dados(data):
     global etapas, receita, titulo_grafico, relacao_banho
-    etapas = [Etapa(**e) for e in data.get("etapas", [])]
+    etapas = data.get("etapas", [])
     receita = [ReceitaItem(**r) for r in data.get("receita", [])]
     titulo_grafico = data.get("titulo", "")
     relacao_banho = data.get("relacao_banho", "")
@@ -153,9 +153,13 @@ def gerar_grafico():
 
     acumulado = 0
     for etapa in etapas:
-        acumulado += etapa.tempo
-        tempos.append(acumulado)
-        temperaturas.append(etapa.temperatura)
+tempo = etapa["dados"].get("tempo", 0)
+temp = etapa["dados"].get("temperatura", 0)
+
+acumulado += tempo
+tempos.append(acumulado)
+temperaturas.append(temp)
+
 
     # Corrigir lista para o mesmo comprimento
     if len(temperaturas) < len(tempos):
@@ -192,7 +196,9 @@ def imprimir_pdf():
 
     y = 720
     for etapa in etapas:
-        linha = f"{etapa.tipo}: {etapa.tempo} min, {etapa.temperatura}°C"
+resumo = dados.get("resumo", "")
+linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
+
         c.drawString(50, y, linha)
         y -= 18
         if y < 100:
