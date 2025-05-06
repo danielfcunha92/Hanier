@@ -187,11 +187,14 @@
     }
 
     function lastStepTemp() {
-      if (!etapasData || etapasData.length === 0) return 0;
-      const last = etapasData[etapasData.length - 1];
-      const t = last.dados && last.dados.temperatura;
-      return typeof t === 'number' ? t : (parseFloat(t) || 0);
+      const rows = document.querySelectorAll('#tabela-etapas tr[data-index]');
+      if (rows.length === 0) return 0;
+      const lastRow = rows[rows.length - 1];
+      // célula de tempo está na terceira coluna (índice 2)
+      const tempCell = lastRow.cells[2].textContent;
+      return parseFloat(tempCell) || 0;
     }
+
 
     async function confirmarEtapa() {
       const tipo = document.getElementById('tipo').value;
