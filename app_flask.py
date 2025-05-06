@@ -152,17 +152,14 @@ def gerar_grafico():
     temperaturas = []
 
     acumulado = 0
-for etapa in etapas:
-    tempo = etapa["dados"].get("tempo", 0)
-    temp = etapa["dados"].get("temperatura", 0)
+    for etapa in etapas:
+        tempo = etapa["dados"].get("tempo", 0)
+        temp = etapa["dados"].get("temperatura", 0)
 
-    acumulado += tempo
-    tempos.append(acumulado)
-    temperaturas.append(temp)
+        acumulado += tempo
+        tempos.append(acumulado)
+        temperaturas.append(temp)
 
-
-
-    # Corrigir lista para o mesmo comprimento
     if len(temperaturas) < len(tempos):
         temperaturas.insert(0, temperaturas[0])
 
@@ -175,7 +172,8 @@ for etapa in etapas:
     plt.savefig(buf, format='png')
     plt.close()
     buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+    return send_file(buf, mimetype='image/png')  # ✅ Agora dentro da função
+
 
 @app.route("/imprimir_pdf", methods=["POST"])
 def imprimir_pdf():
