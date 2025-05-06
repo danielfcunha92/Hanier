@@ -180,32 +180,32 @@ async function confirmarEtapa() {
       resumo = `Água ${agua}, 1:${rel}`;
       dados = { resumo, tempo, temperatura };
       break;
-    case 'Injetar Produto': {
-      const prod     = document.getElementById('produto').value;
-      const aguaInj  = document.getElementById('agua_inj').value;
-      const tdias    = document.getElementById('tempo_inj')?.value || 2;
-      const tempPrev = lastStepTemp() !== null 
-                        ? lastStepTemp() 
-                        : /* opcional: valor inicial, ex. 25 */ 25;
-      tempo       = Number(tdias);
-      temperatura = tempPrev;
-      resumo      = `${prod}, água ${aguaInj}`;
-      dados       = { resumo, tempo, temperatura };
-      break;
-}
 
-    case 'Dosagem de Produto': {
-      const tdPrev   = parseFloat(document.getElementById('tempo_dos').value) || 0;
-      const curva    = document.getElementById('curva_dos').value;
-      const tempPrev = lastStepTemp() !== null 
-                        ? lastStepTemp() 
-                        : /* opcional: valor inicial, ex. 25 */ 25;
-      tempo       = tdPrev;
-      temperatura = tempPrev;      // <<< agora usa sempre o último
-      resumo      = `Dosagem: ${tdPrev} min${curva?`, curva ${curva}`:``}`;
-      dados       = { resumo, tempo, temperatura };
-      break;
-}
+
+   case 'Injetar Produto': {
+     const prod    = document.getElementById('produto').value;
+     const aguaInj = document.getElementById('agua_inj').value;
+     // sempre herda a temperatura da etapa anterior:
+     const tempPrev = lastStepTemp();
+     tempo       = Number(document.getElementById('tempo_inj')?.value || 2);
+     temperatura = (tempPrev !== null) ? tempPrev : 25;
+     resumo      = `${prod}, água ${aguaInj}`;
+     dados       = { resumo, tempo, temperatura };
+     break;
+   }
+
+
+   case 'Dosagem de Produto': {
+     const tdPrev = parseFloat(document.getElementById('tempo_dos').value) || 0;
+     const curva  = document.getElementById('curva_dos').value;
+     const tempPrev = lastStepTemp();
+     tempo       = tdPrev;
+     temperatura = (tempPrev !== null) ? tempPrev : 25;
+     resumo      = `Dosagem: ${tdPrev} min${curva?`, curva ${curva}`:``}`;
+     dados       = { resumo, tempo, temperatura };
+     break;
+   }
+
 
     case 'Termoregulação':
       const t0 = parseFloat(document.getElementById('temp_atual').value) || 0;
