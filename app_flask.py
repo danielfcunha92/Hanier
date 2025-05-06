@@ -182,7 +182,6 @@ def imprimir_pdf():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
 
-    # Página 1: gráfico + etapas
     try:
         logo = ImageReader(LOGO_PATH)
         c.drawImage(logo, 440, 720, width=120, preserveAspectRatio=True, mask='auto')
@@ -194,17 +193,16 @@ def imprimir_pdf():
     c.setFont("Helvetica", 11)
 
     y = 720
-for etapa in etapas:
-    dados = etapa["dados"]
-    resumo = dados.get("resumo", "")
-    linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
-    
-    c.drawString(50, y, linha)
-    y -= 18
-    if y < 100:
-        c.showPage()
-        y = 750
+    for etapa in etapas:
+        dados = etapa["dados"]
+        resumo = dados.get("resumo", "")
+        linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
 
+        c.drawString(50, y, linha)
+        y -= 18
+        if y < 100:
+            c.showPage()
+            y = 750
 
     c.drawString(50, y - 25, f"Tempo total: {calcular_tempo_total()} h")
     c.drawString(50, y - 40, f"Relação de banho: {relacao_banho}")
@@ -242,6 +240,7 @@ for etapa in etapas:
     buffer.seek(0)
 
     return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name="processo.pdf")
+
 
 @app.route("/salvar_dados", methods=["GET"])
 def salvar_dados():
