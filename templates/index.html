@@ -192,45 +192,47 @@ async function confirmarEtapa() {
     dados = { resumo, tempo, temperatura };
   }
 
-  else if (tipo === "Injetar Produto") {
-    const produto = document.getElementById("produto").value;
-    const agua = document.getElementById("agua_inj").value;
-    tempo = 2;
+else if (tipo === "Injetar Produto") {
+  const produto = document.getElementById("produto").value;
+  const agua = document.getElementById("agua_inj").value;
+  tempo = 2;
 
-    try {
-      const linhas = document.querySelectorAll("table tr");
-      if (linhas.length > 2) {
-        const ultima = linhas[linhas.length - 2]; // ignora cabeçalho
-        const tipoEtapa = ultima.cells[0].textContent;
-        const resumoEtapa = ultima.cells[1].textContent;
+  try {
+    const linhas = document.querySelectorAll("table tr");
+    if (linhas.length > 2) {
+      const ultima = linhas[linhas.length - 2];
+      const tipoEtapa = ultima.cells[0].textContent;
+      const resumoEtapa = ultima.cells[1].textContent;
+      const tempoStr = ultima.cells[2].textContent;
 
-        // 1. Tenta extrair a última temperatura informada (ex: "60°C")
-        const regex = /(\d+)°C/g;
-        const temperaturas = [...resumoEtapa.matchAll(regex)];
-
-        if (temperaturas.length > 0) {
-          const ultimaTemp = temperaturas[temperaturas.length - 1];
-          temperatura = parseFloat(ultimaTemp[1]);
-        }
-        // 2. Se não tiver °C, tenta deduzir a partir de "Encher Máquina"
-        else if (tipoEtapa === "Encher Máquina") {
-          if (resumoEtapa.includes("Quente")) temperatura = 40;
-          else if (resumoEtapa.includes("Fria")) temperatura = 25;
-        }
-        // 3. Se ainda não definiu temperatura, tenta recuperar da célula de tempo anterior
-        if (!temperatura || temperatura === 0) {
-          const tempStr = ultima.cells[2].textContent;
-          temperatura = parseFloat(tempStr) || 25;  // fallback final
-        }
+      // Tenta extrair última temperatura do resumo
+      const regex = /(\d+)°C/g;
+      const temperaturas = [...resumoEtapa.matchAll(regex)];
+      if (temperaturas.length > 0) {
+        const ultimaTemp = temperaturas[temperaturas.length - 1];
+        temperatura = parseFloat(ultimaTemp[1]);
       }
-    } catch (e) {
-      console.error("Erro ao recuperar temperatura anterior:", e);
-      temperatura = 25;  // fallback total
+      // Se não houver °C no resumo, tenta interpretar por tipo de etapa anterior
+      else if (tipoEtapa === "Encher Máquina") {
+        if (resumoEtapa.includes("Quente")) temperatura = 40;
+        else if (resumoEtapa.includes("Fria")) temperatura = 25;
+      }
+      // Se ainda não foi possível, tenta extrair da coluna de temperatura (tempo)
+      if (!temperatura || temperatura === 0) {
+        temperatura = parseFloat(tempoStr) || 25;
+      }
+    } else {
+      temperatura = 25; // fallback
     }
-
-    resumo = `${produto} com água ${agua}`;
-    dados = { resumo, tempo, temperatura };
+  } catch (e) {
+    console.warn("Erro ao determinar temperatura anterior:", e);
+    temperatura = 25;
   }
+
+  resumo = `${produto} com água ${agua}`;
+  dados = { resumo, tempo, temperatura };
+}
+
 
 
   else if (tipo === "Termorregulação") {
