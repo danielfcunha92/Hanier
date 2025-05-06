@@ -261,19 +261,14 @@
     }
 
     function lastStepTemp() {
-      const trs = document.querySelectorAll('#tabela-etapas tr');
-      if (trs.length < 2) return null;
-      return parseFloat(trs[trs.length - 1].cells[2].textContent) || null;
-    }
-
-    async function editarEtapa() {
-      if (selectedIndex === null) return alert('Selecione uma etapa.');
-      const et = etapasData[selectedIndex];
-      document.getElementById('tipo').value = et.tipo;
-      abrirModal(); mostrarCamposEtapa();
-      // preencha campos conforme et.dados aqui
-    }
-    async function excluirEtapa()   { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+  // Retorna a temperatura da última etapa a partir dos dados em memória
+  if (!etapasData || etapasData.length === 0) return null;
+  const last = etapasData[etapasData.length - 1];
+  const temp = last.dados && last.dados.temperatura;
+  return typeof temp === 'number'
+    ? temp
+    : (parseFloat(temp) || 0);
+}; location.reload(); }
     async function subirEtapa()     { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
     async function descerEtapa()    { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
     async function limparEtapas()   { if (!confirm('Remover todas as etapas?')) return; await fetch('/limpar_etapas',{method:'POST'}); location.reload(); }
