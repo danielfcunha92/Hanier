@@ -168,7 +168,7 @@ def grafico_png():
         f"Tempo Total: {h}:{m:02d}",
         transform=ax.transAxes,
         ha='right', va='bottom',
-        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round', pad=4)
+ 
     )
 
     plt.tight_layout()
