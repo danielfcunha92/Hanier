@@ -111,7 +111,9 @@
     <h3>Nova Etapa</h3>
     <label for="tipo">Tipo de Etapa:</label>
     <select id="tipo" onchange="mostrarCamposEtapa()">
-      <option value="Encher Máquina">Encher Máquina</option>
+<option value="Encher Máquina">Encher Máquina</option>
+<option value="Injetar Produto">Injetar Produto</option>
+
     </select>
     <div id="campos-etapa"></div>
     <button onclick="confirmarEtapa()">Confirmar</button>
@@ -147,7 +149,20 @@ function mostrarCamposEtapa() {
       <input id="relacao" type="number" placeholder="Ex: 10">
     `;
   }
+
+  if (tipo === "Injetar Produto") {
+    campos.innerHTML += `
+      <label>Produto:</label>
+      <input id="produto" type="text" placeholder="Nome do produto">
+      <label>Água:</label>
+      <select id="agua_inj">
+        <option value="Limpa">Limpa</option>
+        <option value="Retorno">Retorno</option>
+      </select>
+    `;
+  }
 }
+
 
 async function confirmarEtapa() {
   const tipo = document.getElementById("tipo").value;
@@ -160,6 +175,27 @@ async function confirmarEtapa() {
     resumo = `Água ${agua}, 1:${relacao}`;
     dados = { resumo, tempo, temperatura };
   }
+
+else if (tipo === "Injetar Produto") {
+  const produto = document.getElementById("produto").value;
+  const agua = document.getElementById("agua_inj").value;
+
+  const tempo = 2;
+  let temperatura = 0;
+
+  try {
+    const tabela = document.querySelectorAll("table tr");
+    if (tabela.length > 1) {
+      const ultimaLinha = tabela[tabela.length - 1];
+      const celulas = ultimaLinha.querySelectorAll("td");
+      const tempStr = celulas[2]?.textContent;
+      temperatura = parseFloat(tempStr) || 0;
+    }
+  } catch {}
+
+  resumo = `${produto} com água ${agua}`;
+  dados = { resumo, tempo, temperatura };
+}
 
   await fetch("/adicionar_etapa", {
     method: "POST",
