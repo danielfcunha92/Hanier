@@ -200,27 +200,28 @@ async function confirmarEtapa() {
   try {
     const linhas = document.querySelectorAll("table tr");
     if (linhas.length > 2) {
-    const ultima = linhas[linhas.length - 2]; // ignora cabeçalho
-    const linhaTexto = ultima.cells[1].textContent;
-    const regex = /(\d+)°C/g;
-    const temperaturas = [...linhaTexto.matchAll(regex)];
-    if (temperaturas.length > 0) {
-      const ultimaTemp = temperaturas[temperaturas.length - 1];
-      temperatura = parseFloat(ultimaTemp[1]);
-}     else {
-      const tipoEtapa = ultima.cells[0].textContent;
-      const resumoEtapa = ultima.cells[1].textContent;
-      if (tipoEtapa === "Encher Máquina") {
-        if (resumoEtapa.includes("Quente")) temperatura = 40;
-        else if (resumoEtapa.includes("Fria")) temperatura = 25;
-        else temperatura = 0;
+      const ultima = linhas[linhas.length - 2]; // ignora cabeçalho
+      const linhaTexto = ultima.cells[1].textContent;
+      const regex = /(\d+)°C/g;
+      const temperaturas = [...linhaTexto.matchAll(regex)];
+
+      if (temperaturas.length > 0) {
+        const ultimaTemp = temperaturas[temperaturas.length - 1];
+        temperatura = parseFloat(ultimaTemp[1]);
       } else {
-        temperatura = 0;
+        const tipoEtapa = ultima.cells[0].textContent;
+        const resumoEtapa = ultima.cells[1].textContent;
+        if (tipoEtapa === "Encher Máquina") {
+          if (resumoEtapa.includes("Quente")) temperatura = 40;
+          else if (resumoEtapa.includes("Fria")) temperatura = 25;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao determinar temperatura anterior:", e);
+    temperatura = 0;
   }
-}
 
-
-} catch {}
 
 
 
