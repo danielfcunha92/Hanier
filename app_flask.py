@@ -140,7 +140,17 @@ def grafico_png():
     if not etapas:
         return '', 204
 
-    # ... montagem de tempos, temps e acum ...
+    # ─── montagem de tempos, temps e acum ───
+    tempos = [0]
+    temps  = [etapas[0].get('dados', {}).get('temperatura', 0)]
+    acum   = 0
+    for et in etapas:
+        t    = et.get('dados', {}).get('tempo', 0)
+        temp = et.get('dados', {}).get('temperatura', 0)
+        acum += t
+        tempos.append(acum)
+        temps.append(temp)
+    # ────────────────────────────────────────
 
     buf = io.BytesIO()
     fig, ax = plt.subplots(figsize=(8,4))
@@ -165,6 +175,7 @@ def grafico_png():
     fig.savefig(buf, format='png')
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
+
 
 
 
