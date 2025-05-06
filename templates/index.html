@@ -147,11 +147,14 @@
           <select id="agua_inj"><option>Limpa</option><option>Retorno</option></select>
         `; break;
         case 'Dosagem de Produto': html = `
+          <label>Sequência do Produto:</label>
+          <input id="sequencia" type="text" placeholder="Ex: A">
           <label>Tempo de Dosagem (min):</label>
           <input id="tempo_dos" type="number" placeholder="Ex: 5">
           <label>Curva (opcional):</label>
           <input id="curva_dos" type="text" placeholder="Ex: rampa">
         `; break;
+
         case 'Termoregulação': html = `
           <label>Temp. atual (°C):</label><input id="temp_atual" type="number">
           <label>Temp. final (°C):</label><input id="temp_final" type="number">
@@ -209,12 +212,15 @@
           break;
         }
         case 'Dosagem de Produto': {
-          const td = parseFloat(document.getElementById('tempo_dos').value) || 0;
-          const curva = document.getElementById('curva_dos').value;
-          tempo = td; temperatura = lastStepTemp();
-          resumo = `Dosagem: ${td} min${curva ? `, curva ${curva}` : ''}`;
+          const seq    = document.getElementById('sequencia').value || '';
+          const td     = parseFloat(document.getElementById('tempo_dos').value) || 0;
+          const curva  = document.getElementById('curva_dos').value;
+          tempo        = td;
+          temperatura  = lastStepTemp();
+          resumo       = `Seq ${seq}, Dosagem: ${td} min${curva ? `, curva ${curva}` : ''}`;
           break;
         }
+
         case 'Termoregulação': {
           const t0 = parseFloat(document.getElementById('temp_atual').value) || 0;
           const t1 = parseFloat(document.getElementById('temp_final').value) || 0;
