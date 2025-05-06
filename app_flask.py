@@ -60,7 +60,8 @@ def calcular_tempo_total():
     return f"{horas}:{minutos:02d}"
 
 def etapas_to_list():
-    return [etapa.to_dict() for etapa in etapas]
+    return etapas  # etapas já é uma lista de dicionários
+
 
 def receita_to_list():
     return [item.to_dict() for item in receita]
