@@ -107,96 +107,56 @@
   <img src="/grafico.png?{{ tempo_total }}" width="800" alt="Gráfico de Tingimento">
 </div>
 <div id="modal">
-  <div id="modal-content">
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:8px; width:300px;">
     <h3>Nova Etapa</h3>
     <label for="tipo">Tipo de Etapa:</label>
-    <select id="tipo">
+    <select id="tipo" onchange="mostrarCamposEtapa()">
       <option value="Encher Máquina">Encher Máquina</option>
-      <option value="Injetar Produto">Injetar Produto</option>
-      <option value="Dosagem de Produto">Dosagem de Produto</option>
-      <option value="Termoregulação">Termoregulação</option>
-      <option value="Patamar">Patamar</option>
-      <option value="Transbordo">Transbordo</option>
-      <option value="Soltar Banho">Soltar Banho</option>
-      <option value="Aviso">Aviso</option>
     </select>
+    <div id="campos-etapa"></div>
     <button onclick="confirmarEtapa()">Confirmar</button>
     <button onclick="fecharModal()">Cancelar</button>
   </div>
 </div>
+
 <script>
 function abrirModal() {
-  document.getElementById('modal').style.display = 'flex';
+  document.getElementById("modal").style.display = "flex";
+  mostrarCamposEtapa();
 }
-function fecharModal() {
-  document.getElementById('modal').style.display = 'none';
-}
-async function confirmarEtapa() {
-  const tipo = document.getElementById('tipo').value;
-  let dados = {}, tempo = 0, temperatura = 0, resumo = "";
 
-  if (tipo === 'Encher Máquina') {
-    const agua = prompt("Água quente ou fria?");
-    const relacao = prompt("Relação de banho (1:x)?");
-    tempo = 3;
-    temperatura = (agua.toLowerCase().includes("quente")) ? 40 : 25;
+function fecharModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function mostrarCamposEtapa() {
+  const tipo = document.getElementById("tipo").value;
+  const campos = document.getElementById("campos-etapa");
+  campos.innerHTML = "";
+
+  if (tipo === "Encher Máquina") {
+    campos.innerHTML += `
+      <label>Água:</label>
+      <select id="agua">
+        <option value="Quente">Quente</option>
+        <option value="Fria">Fria</option>
+      </select>
+      <label>Relação de Banho (1:x):</label>
+      <input id="relacao" type="number" placeholder="Ex: 10">
+    `;
+  }
+}
+
+async function confirmarEtapa() {
+  const tipo = document.getElementById("tipo").value;
+  let dados = {}, tempo = 3, temperatura = 0, resumo = "";
+
+  if (tipo === "Encher Máquina") {
+    const agua = document.getElementById("agua").value;
+    const relacao = document.getElementById("relacao").value;
+    temperatura = agua === "Quente" ? 40 : 25;
     resumo = `Água ${agua}, 1:${relacao}`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Injetar Produto') {
-    const produto = prompt("Nome do produto?");
-    const agua = prompt("Água limpa ou retorno?");
-    tempo = 1;
-    temperatura = 0;
-    resumo = `${produto} com água ${agua}`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Dosagem de Produto') {
-    const produto = prompt("Produto?");
-    const tempo_dosagem = prompt("Tempo de dosagem (min)?");
-    const curva = prompt("Curva?");
-    tempo = parseFloat(tempo_dosagem);
-    temperatura = 0;
-    resumo = `${produto}, curva ${curva}`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Termoregulação') {
-    const t1 = parseFloat(prompt("Temperatura inicial?"));
-    const t2 = parseFloat(prompt("Temperatura final?"));
-    const grad = parseFloat(prompt("Gradiente °C/min?"));
-    tempo = Math.abs(t2 - t1) / grad;
-    temperatura = t2;
-    resumo = `${t1} → ${t2}°C a ${grad}°C/min`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Patamar') {
-    temperatura = parseFloat(prompt("Temperatura (°C)?"));
-    tempo = parseFloat(prompt("Tempo (min)?"));
-    resumo = `${temperatura}°C por ${tempo} min`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Transbordo') {
-    const t1 = parseFloat(prompt("Temp. inicial?"));
-    const t2 = parseFloat(prompt("Temp. final?"));
-    tempo = parseFloat(prompt("Tempo (min)?"));
-    const relacao = prompt("Relação de banho (1:x)?");
-    temperatura = t2;
-    resumo = `${t1} → ${t2}°C em ${tempo} min, 1:${relacao}`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Soltar Banho') {
-    tempo = 2;
-    temperatura = 0;
-    resumo = `Descarga do banho`;
-    dados = { resumo, tempo, temperatura };
-  }
-  else if (tipo === 'Aviso') {
-    const aviso = prompt("Qual aviso? (Amostra / Medir pH / Medir densidade)");
-    let faixa = "";
-    if (aviso.toLowerCase().includes("ph")) faixa = prompt("Faixa de pH?");
-    resumo = aviso + (faixa ? ` (${faixa})` : "");
-    tempo = 0;
-    temperatura = 0;
     dados = { resumo, tempo, temperatura };
   }
 
@@ -205,6 +165,7 @@ async function confirmarEtapa() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tipo, dados })
   });
+
   fecharModal();
   location.reload();
 }
