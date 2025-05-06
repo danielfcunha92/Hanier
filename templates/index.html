@@ -113,6 +113,8 @@
     <select id="tipo" onchange="mostrarCamposEtapa()">
 <option value="Encher Máquina">Encher Máquina</option>
 <option value="Injetar Produto">Injetar Produto</option>
+<option value="Termorregulação">Termorregulação</option>
+
 
     </select>
     <div id="campos-etapa"></div>
@@ -161,6 +163,17 @@ function mostrarCamposEtapa() {
       </select>
     `;
   }
+   if (tipo === "Termorregulação") {
+    campos.innerHTML += `
+      <label>Temp. atual (°C):</label>
+      <input id="temp_atual" type="number" placeholder="Ex: 60">
+      <label>Temp. final (°C):</label>
+      <input id="temp_final" type="number" placeholder="Ex: 90">
+      <label>Gradiente (°C/min):</label>
+      <input id="gradiente" type="number" placeholder="Ex: 3">
+  `  ;
+  }
+
 }
 
 
@@ -195,6 +208,25 @@ try {
         } else if (resumo.includes("Fria")) {
             temperatura = 25;
         }
+else if (tipo === "Termorregulação") {
+  const tempInicial = parseFloat(document.getElementById("temp_atual").value);
+  const tempFinal = parseFloat(document.getElementById("temp_final").value);
+  const gradiente = parseFloat(document.getElementById("gradiente").value);
+
+  const diferenca = Math.abs(tempFinal - tempInicial);
+  const tempo = gradiente > 0 ? diferenca / gradiente : 0;
+
+  const acao = tempFinal > tempInicial ? "Aquecer" : "Resfriar";
+  const resumo = `${acao} até ${tempFinal}°C, ${gradiente}°C/min`;
+
+  dados = {
+    resumo,
+    tempo: Math.round(tempo),
+    temperatura: tempFinal
+  };
+}
+
+
     }
 } catch {}
 
