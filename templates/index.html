@@ -84,12 +84,23 @@
     const etapasData = {{ etapas_json | safe }};
     let selectedIndex = null;
 
-    // Inicialização de eventos
+    // Eventos
     btnNova.onclick = abrirModal;
     btnGrafico.onclick = gerarGrafico;
     btnFechar.onclick = fecharModal;
     btnConfirmar.onclick = confirmarEtapa;
+    document.getElementById('btnEditar').onclick = editarEtapa;
+    document.getElementById('btnExcluir').onclick = excluirEtapa;
+    document.getElementById('btnSubir').onclick = subirEtapa;
+    document.getElementById('btnDescer').onclick = descerEtapa;
+    document.getElementById('btnLimpar').onclick = limparEtapas;
+    document.getElementById('btnTitulo').onclick = editarTitulo;
+    document.getElementById('btnSalvar').onclick = salvarEtapas;
+    document.getElementById('btnCarregar').onclick = carregarEtapas;
+    document.getElementById('btnImprimir').onclick = () => imprimir(false);
+    document.getElementById('btnReceita').onclick = () => imprimir(true);
     tipoSelect.onchange = mostrarCamposEtapa;
+    document.querySelectorAll('#tabela-etapas tr[data-index]').forEach(tr => tr.onclick = selecionarLinha);
 
     function selecionarLinha(event) {
       tabela.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
@@ -98,11 +109,7 @@
       selectedIndex = parseInt(tr.dataset.index);
     }
 
-    // Ligar seleção a cada linha
-    document.querySelectorAll('#tabela-etapas tr[data-index]').forEach(tr => tr.onclick = selecionarLinha);
-
     function abrirModal() {
-      // Popular opções de tipo
       const tipos = ['Encher Máquina','Injetar Produto','Dosagem de Produto','Termoregulação','Patamar','Transbordo','Soltar Banho','Aviso'];
       tipoSelect.innerHTML = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
       modal.style.display = 'flex';
@@ -227,7 +234,7 @@
     function lastStepTemp() {
       if (!etapasData || etapasData.length===0) return 0;
       const last = etapasData[etapasData.length-1];
-      const t = last.dados?.temperatura;
+      const t = last.dados && last.dados.temperatura;
       return typeof t==='number'?t:(parseFloat(t)||0);
     }
 
@@ -236,17 +243,62 @@
       imgGrafico.style.display='block';
     }
 
-    // Funções auxiliares mantidas
-    async function editarEtapa()    { /* ... igual antes ... */ }
-    async function excluirEtapa()   { /* ... */ }
-    async function subirEtapa()     { /* ... */ }
-    async function descerEtapa()    { /* ... */ }
-    async function limparEtapas()   { /* ... */ }
-    async function editarTitulo()   { /* ... */ }
-    function salvarEtapas()         { window.location='/salvar_dados'; }
-    function carregarEtapas()       { fileInput.click(); }
-    async function uploadDados(evt){ /* ... */ }
-    async function imprimir(c)     { /* ... */ }
+    async function editarEtapa() {
+      if (selectedIndex===null) return alert('Selecione uma etapa.');
+      // abrir modal e preencher campos de edição com etapasData[selectedIndex]
+      abrirModal();
+      tipoSelect.value = etapasData[selectedIndex].tipo;
+      mostrarCamposEtapa();
+      // aqui preencha cada input com valores de etapasData[selectedIndex].dados
+    }
+
+    async function excluirEtapa() {
+      if (selectedIndex===null) return alert('Selecione uma etapa.');
+      await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'});
+      location.reload();
+    }
+
+    async function subirEtapa() {
+      if (selectedIndex===null) return alert('Selecione uma etapa.');
+      await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'});
+      location.reload();
+    }
+
+    async function descerEtapa() {
+      if (selectedIndex===null) return alert('Selecione uma etapa.');
+      await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'});
+      location.reload();
+    }
+
+    async function limparEtapas() {
+      if (!confirm('Remover todas as etapas?')) return;
+      await fetch('/limpar_etapas',{method:'POST'});
+      location.reload();
+    }
+
+    async function editarTitulo() {
+      const n = prompt('Novo título:', '{{ titulo }}');
+      if (n!=null) {
+        await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})});
+        location.reload();
+      }
+    }
+
+    function salvarEtapas() { window.location='/salvar_dados'; }
+    function carregarEtapas() { fileInput.click(); }
+
+    async function uploadDados(evt) {
+      const f = evt.target.files[0]; if(!f) return;
+      const fd = new FormData(); fd.append('file',f);
+      const r = await fetch('/carregar_dados',{method:'POST',body:fd});
+      const j = await r.json();
+      if(j.success) location.reload(); else alert('Erro:'+j.error);
+    }
+
+    async function imprimir(comCusto) {
+      const r = await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:comCusto})});
+      const b = await r.blob(); window.open(URL.createObjectURL(b));
+    }
 
   </script>
 </body>
