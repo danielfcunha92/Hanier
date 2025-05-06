@@ -189,51 +189,43 @@ async function confirmarEtapa() {
     dados = { resumo, tempo, temperatura };
   }
 
-else if (tipo === "Injetar Produto") {
-  const produto = document.getElementById("produto").value;
-  const agua = document.getElementById("agua_inj").value;
+  else if (tipo === "Injetar Produto") {
+    const produto = document.getElementById("produto").value;
+    const agua = document.getElementById("agua_inj").value;
+    tempo = 2;
 
-const tempo = 2;
-let temperatura = 0;
-
-try {
-    const linhas = document.querySelectorAll("table tr");
-    if (linhas.length > 1) {
+    try {
+      const linhas = document.querySelectorAll("table tr");
+      if (linhas.length > 1) {
         const ultima = linhas[linhas.length - 1];
-        const tipo = ultima.cells[0].textContent;
-        const resumo = ultima.cells[1].textContent;
+        const resumoUltimo = ultima.cells[1].textContent;
 
-        if (resumo.includes("Quente")) {
-            temperatura = 40;
-        } else if (resumo.includes("Fria")) {
-            temperatura = 25;
-        }
-else if (tipo === "Termorregulação") {
-  const tempInicial = parseFloat(document.getElementById("temp_atual").value);
-  const tempFinal = parseFloat(document.getElementById("temp_final").value);
-  const gradiente = parseFloat(document.getElementById("gradiente").value);
+        if (resumoUltimo.includes("Quente")) temperatura = 40;
+        else if (resumoUltimo.includes("Fria")) temperatura = 25;
+      }
+    } catch {}
 
-  const diferenca = Math.abs(tempFinal - tempInicial);
-  const tempo = gradiente > 0 ? diferenca / gradiente : 0;
+    resumo = `${produto} com água ${agua}`;
+    dados = { resumo, tempo, temperatura };
+  }
 
-  const acao = tempFinal > tempInicial ? "Aquecer" : "Resfriar";
-  const resumo = `${acao} até ${tempFinal}°C, ${gradiente}°C/min`;
+  else if (tipo === "Termorregulação") {
+    const tempInicial = parseFloat(document.getElementById("temp_atual").value);
+    const tempFinal = parseFloat(document.getElementById("temp_final").value);
+    const gradiente = parseFloat(document.getElementById("gradiente").value);
 
-  dados = {
-    resumo,
-    tempo: Math.round(tempo),
-    temperatura: tempFinal
-  };
-}
+    const diferenca = Math.abs(tempFinal - tempInicial);
+    tempo = gradiente > 0 ? diferenca / gradiente : 0;
 
+    const acao = tempFinal > tempInicial ? "Aquecer" : "Resfriar";
+    resumo = `${acao} até ${tempFinal}°C, ${gradiente}°C/min`;
 
-    }
-} catch {}
-
-
-  resumo = `${produto} com água ${agua}`;
-  dados = { resumo, tempo, temperatura };
-}
+    dados = {
+      resumo,
+      tempo: Math.round(tempo),
+      temperatura: tempFinal
+    };
+  }
 
   await fetch("/adicionar_etapa", {
     method: "POST",
@@ -243,6 +235,7 @@ else if (tipo === "Termorregulação") {
 
   fecharModal();
   location.reload();
+}
 }
 </script>
 </body>
