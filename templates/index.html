@@ -37,7 +37,6 @@
       <button id="btnImprimir">Imprimir</button>
       <button id="btnReceita">Receita</button>
     </div>
-
     <table id="tabela-etapas">
       <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
       {% for etapa in etapas %}
@@ -48,13 +47,11 @@
       </tr>
       {% endfor %}
     </table>
-
     <p>Tempo total: {{ tempo_total }}</p>
     <h3>Gráfico de Temperatura × Tempo</h3>
     <button id="btnGrafico">Gerar Gráfico</button>
     <img id="grafico" src="" style="display:none; width:800px; margin-top:10px;" alt="Gráfico de Tingimento">
   </div>
-
   <div id="modal">
     <div id="modal-content">
       <h3>Nova Etapa</h3>
@@ -65,241 +62,224 @@
       <button id="btnFechar">Cancelar</button>
     </div>
   </div>
-
   <input type="file" id="fileInput" accept=".json" style="display:none">
-
   <script>
-    // Elementos
-    const btnNova = document.getElementById('btnNova');
-    const btnGrafico = document.getElementById('btnGrafico');
-    const tabela = document.getElementById('tabela-etapas');
-    const modal = document.getElementById('modal');
-    const tipoSelect = document.getElementById('tipo');
-    const camposEtapa = document.getElementById('campos-etapa');
-    const btnConfirmar = document.getElementById('btnConfirmar');
-    const btnFechar = document.getElementById('btnFechar');
-    const imgGrafico = document.getElementById('grafico');
-    const fileInput = document.getElementById('fileInput');
-
     const etapasData = {{ etapas_json | safe }};
+    const fileInput = document.getElementById('fileInput');
     let selectedIndex = null;
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elementos
+      const btnNova = document.getElementById('btnNova');
+      const btnEditar = document.getElementById('btnEditar');
+      const btnExcluir = document.getElementById('btnExcluir');
+      const btnSubir = document.getElementById('btnSubir');
+      const btnDescer = document.getElementById('btnDescer');
+      const btnLimpar = document.getElementById('btnLimpar');
+      const btnTitulo = document.getElementById('btnTitulo');
+      const btnSalvar = document.getElementById('btnSalvar');
+      const btnCarregar = document.getElementById('btnCarregar');
+      const btnImprimir = document.getElementById('btnImprimir');
+      const btnReceita = document.getElementById('btnReceita');
+      const btnGrafico = document.getElementById('btnGrafico');
+      const modal = document.getElementById('modal');
+      const tipoSelect = document.getElementById('tipo');
+      const camposEtapa = document.getElementById('campos-etapa');
+      const btnConfirmar = document.getElementById('btnConfirmar');
+      const btnFechar = document.getElementById('btnFechar');
+      const imgGrafico = document.getElementById('grafico');
+      const tabela = document.getElementById('tabela-etapas');
+      
+      // Eventos
+      btnNova.addEventListener('click', abrirModal);
+      btnConfirmar.addEventListener('click', confirmarEtapa);
+      btnFechar.addEventListener('click', fecharModal);
+      tipoSelect.addEventListener('change', mostrarCamposEtapa);
+      btnGrafico.addEventListener('click', gerarGrafico);
+      btnEditar.addEventListener('click', editarEtapa);
+      btnExcluir.addEventListener('click', excluirEtapa);
+      btnSubir.addEventListener('click', subirEtapa);
+      btnDescer.addEventListener('click', descerEtapa);
+      btnLimpar.addEventListener('click', limparEtapas);
+      btnTitulo.addEventListener('click', editarTitulo);
+      btnSalvar.addEventListener('click', salvarEtapas);
+      btnCarregar.addEventListener('click', () => fileInput.click());
+      btnImprimir.addEventListener('click', () => imprimir(false));
+      btnReceita.addEventListener('click', () => imprimir(true));
+      fileInput.addEventListener('change', uploadDados);
+      tabela.querySelectorAll('tr[data-index]').forEach(tr => tr.addEventListener('click', selecionarLinha));
+    });
 
-    // Eventos
-    btnNova.onclick = abrirModal;
-    btnGrafico.onclick = gerarGrafico;
-    btnFechar.onclick = fecharModal;
-    btnConfirmar.onclick = confirmarEtapa;
-    document.getElementById('btnEditar').onclick = editarEtapa;
-    document.getElementById('btnExcluir').onclick = excluirEtapa;
-    document.getElementById('btnSubir').onclick = subirEtapa;
-    document.getElementById('btnDescer').onclick = descerEtapa;
-    document.getElementById('btnLimpar').onclick = limparEtapas;
-    document.getElementById('btnTitulo').onclick = editarTitulo;
-    document.getElementById('btnSalvar').onclick = salvarEtapas;
-    document.getElementById('btnCarregar').onclick = carregarEtapas;
-    document.getElementById('btnImprimir').onclick = () => imprimir(false);
-    document.getElementById('btnReceita').onclick = () => imprimir(true);
-    tipoSelect.onchange = mostrarCamposEtapa;
-    document.querySelectorAll('#tabela-etapas tr[data-index]').forEach(tr => tr.onclick = selecionarLinha);
-
-    function selecionarLinha(event) {
+    function selecionarLinha(evt) {
+      const tabela = document.getElementById('tabela-etapas');
       tabela.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
-      const tr = event.currentTarget;
+      const tr = evt.currentTarget;
       tr.classList.add('selected');
       selectedIndex = parseInt(tr.dataset.index);
     }
 
     function abrirModal() {
       const tipos = ['Encher Máquina','Injetar Produto','Dosagem de Produto','Termoregulação','Patamar','Transbordo','Soltar Banho','Aviso'];
+      const tipoSelect = document.getElementById('tipo');
       tipoSelect.innerHTML = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
-      modal.style.display = 'flex';
+      document.getElementById('modal').style.display = 'flex';
       mostrarCamposEtapa();
     }
 
     function fecharModal() {
-      modal.style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
     }
 
     function mostrarCamposEtapa() {
-      const tipo = tipoSelect.value;
+      const tipo = document.getElementById('tipo').value;
+      const camposEtapa = document.getElementById('campos-etapa');
       let html = '';
-      if (tipo === 'Encher Máquina') {
-        html = `
+      switch (tipo) {
+        case 'Encher Máquina': html = `
           <label>Água:</label>
           <select id="agua"><option>Quente</option><option>Fria</option></select>
           <label>Relação de Banho (1:x):</label>
           <input id="relacao" type="number" placeholder="Ex: 10">
-        `;
-      } else if (tipo === 'Injetar Produto') {
-        html = `
+        `; break;
+        case 'Injetar Produto': html = `
           <label>Produto:</label>
           <input id="produto" type="text" placeholder="Nome do produto">
           <label>Água:</label>
           <select id="agua_inj"><option>Limpa</option><option>Retorno</option></select>
-        `;
-      } else if (tipo === 'Dosagem de Produto') {
-        html = `
+        `; break;
+        case 'Dosagem de Produto': html = `
           <label>Tempo de Dosagem (min):</label>
           <input id="tempo_dos" type="number" placeholder="Ex: 5">
           <label>Curva (opcional):</label>
           <input id="curva_dos" type="text" placeholder="Ex: rampa">
-        `;
-      } else if (tipo === 'Termoregulação') {
-        html = `
+        `; break;
+        case 'Termoregulação': html = `
           <label>Temp. atual (°C):</label><input id="temp_atual" type="number">
           <label>Temp. final (°C):</label><input id="temp_final" type="number">
           <label>Gradiente (°C/min):</label><input id="gradiente" type="number" placeholder="Ex: 3">
-        `;
-      } else if (tipo === 'Patamar') {
-        html = `
+        `; break;
+        case 'Patamar': html = `
           <label>Temperatura (°C):</label><input id="temp_pat" type="number">
           <label>Tempo (min):</label><input id="tempo_pat" type="number">
-        `;
-      } else if (tipo === 'Transbordo') {
-        html = `
+        `; break;
+        case 'Transbordo': html = `
           <label>Relação (1:x):</label><input id="rt_val" type="number">
           <label>Temp. Inicial (°C):</label><input id="ti" type="number">
           <label>Temp. Final (°C):</label><input id="tf" type="number">
           <label>Tempo (min):</label><input id="tempo_tr" type="number">
-        `;
-      } else if (tipo === 'Soltar Banho') {
-        html = '<p>Resfriamento automático em 3 min</p>';
-      } else if (tipo === 'Aviso') {
-        html = `
+        `; break;
+        case 'Soltar Banho': html = '<p>Resfriamento automático em 3 min</p>'; break;
+        case 'Aviso': html = `
           <label>Aviso:</label>
           <select id="aviso"><option>Amostra</option><option>Medir Densidade</option><option>Medir pH</option></select>
           <div id="ph-campos"></div>
-        `;
+        `; break;
       }
       camposEtapa.innerHTML = html;
       const aviso = document.getElementById('aviso');
       if (aviso) aviso.onchange = e => {
-        document.getElementById('ph-campos').innerHTML = e.target.value==='Medir pH'
-          ? '<label>Faixa de pH:</label><input id="faixa_ph" type="text">' : '';
+        document.getElementById('ph-campos').innerHTML =
+          e.target.value === 'Medir pH'
+            ? '<label>Faixa de pH:</label><input id="faixa_ph" type="text">' : '';
       };
     }
 
+    function lastStepTemp() {
+      if (!etapasData || etapasData.length === 0) return 0;
+      const last = etapasData[etapasData.length - 1];
+      const t = last.dados && last.dados.temperatura;
+      return typeof t === 'number' ? t : (parseFloat(t) || 0);
+    }
+
     async function confirmarEtapa() {
-      const tipo = tipoSelect.value;
+      const tipo = document.getElementById('tipo').value;
       let tempo = 0, temperatura = 0, resumo = '';
-      if (tipo === 'Encher Máquina') {
-        const agua = document.getElementById('agua').value;
-        const rel = document.getElementById('relacao').value;
-        tempo = 3;
-        temperatura = agua==='Quente'?40:25;
-        resumo = `Água ${agua}, 1:${rel}`;
-      } else if (tipo === 'Injetar Produto') {
-        const prod = document.getElementById('produto').value;
-        const aguaInj = document.getElementById('agua_inj').value;
-        tempo = 2;
-        temperatura = lastStepTemp();
-        resumo = `${prod}, água ${aguaInj}`;
-      } else if (tipo === 'Dosagem de Produto') {
-        const td = parseFloat(document.getElementById('tempo_dos').value)||0;
-        const curva = document.getElementById('curva_dos').value;
-        tempo = td;
-        temperatura = lastStepTemp();
-        resumo = `Dosagem: ${td} min${curva?`, curva ${curva}`:''}`;
-      } else if (tipo === 'Termoregulação') {
-        const t0 = parseFloat(document.getElementById('temp_atual').value)||0;
-        const t1 = parseFloat(document.getElementById('temp_final').value)||0;
-        const g = parseFloat(document.getElementById('gradiente').value)||5;
-        tempo = Math.abs(t1-t0)/g;
-        temperatura = t1;
-        resumo = `${t1>t0?'Aquecer':'Resfriar'} de ${t0}→${t1}°C, ${g}°C/min`;
-      } else if (tipo === 'Patamar') {
-        const tp = parseFloat(document.getElementById('temp_pat').value)||0;
-        const tm = parseFloat(document.getElementById('tempo_pat').value)||0;
-        tempo = tm; temperatura = tp;
-        resumo = `${tp}°C por ${tm} min`;
-      } else if (tipo === 'Transbordo') {
-        const rb = parseFloat(document.getElementById('rt_val').value)||0;
-        const ti = parseFloat(document.getElementById('ti').value)||0;
-        const tf = parseFloat(document.getElementById('tf').value)||0;
-        const ttr = parseFloat(document.getElementById('tempo_tr').value)||0;
-        tempo = ttr; temperatura = tf;
-        resumo = `1:${rb}, ${ti}→${tf}°C, ${ttr} min`;
-      } else if (tipo==='Soltar Banho') {
-        tempo=3; temperatura=0; resumo='Resfriamento automático';
-      } else if (tipo==='Aviso') {
-        const av=document.getElementById('aviso').value;
-        const ph=document.getElementById('faixa_ph')?.value;
-        tempo=5; resumo=ph?`${av} (pH ${ph})`:av; temperatura=lastStepTemp();
+      switch (tipo) {
+        case 'Encher Máquina': {
+          const agua = document.getElementById('agua').value;
+          const rel = document.getElementById('relacao').value;
+          tempo = 3; temperatura = agua === 'Quente' ? 40 : 25;
+          resumo = `Água ${agua}, 1:${rel}`;
+          break;
+        }
+        case 'Injetar Produto': {
+          const prod = document.getElementById('produto').value;
+          const aguaInj = document.getElementById('agua_inj').value;
+          tempo = 2; temperatura = lastStepTemp();
+          resumo = `${prod}, água ${aguaInj}`;
+          break;
+        }
+        case 'Dosagem de Produto': {
+          const td = parseFloat(document.getElementById('tempo_dos').value) || 0;
+          const curva = document.getElementById('curva_dos').value;
+          tempo = td; temperatura = lastStepTemp();
+          resumo = `Dosagem: ${td} min${curva ? `, curva ${curva}` : ''}`;
+          break;
+        }
+        case 'Termoregulação': {
+          const t0 = parseFloat(document.getElementById('temp_atual').value) || 0;
+          const t1 = parseFloat(document.getElementById('temp_final').value) || 0;
+          const g = parseFloat(document.getElementById('gradiente').value) || 5;
+          tempo = Math.abs(t1 - t0) / g; temperatura = t1;
+          resumo = `${t1>t0?'Aquecer':'Resfriar'} de ${t0}→${t1}°C, ${g}°C/min`;
+          break;
+        }
+        case 'Patamar': {
+          const tp = parseFloat(document.getElementById('temp_pat').value) || 0;
+          const tm = parseFloat(document.getElementById('tempo_pat').value) || 0;
+          tempo = tm; temperatura = tp;
+          resumo = `${tp}°C por ${tm} min`;
+          break;
+        }
+        case 'Transbordo': {
+          const rb = parseFloat(document.getElementById('rt_val').value) || 0;
+          const ti = parseFloat(document.getElementById('ti').value) || 0;
+          const tf = parseFloat(document.getElementById('tf').value) || 0;
+          const ttr = parseFloat(document.getElementById('tempo_tr').value) || 0;
+          tempo = ttr; temperatura = tf;
+          resumo = `1:${rb}, ${ti}→${tf}°C, ${ttr} min`;
+          break;
+        }
+        case 'Soltar Banho': tempo=3; temperatura=0; resumo='Resfriamento automático'; break;
+        case 'Aviso': {
+          const av = document.getElementById('aviso').value;
+          const ph = document.getElementById('faixa_ph')?.value;
+          tempo = 5; temperatura = lastStepTemp();
+          resumo = ph ? `${av} (pH ${ph})` : av;
+          break;
+        }
       }
-      const dados={ resumo, tempo, temperatura };
-      await fetch('/adicionar_etapa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo,dados})});
+      const dados = { resumo, tempo, temperatura };
+      await fetch('/adicionar_etapa', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ tipo, dados }) });
       fecharModal(); location.reload();
     }
 
-    function lastStepTemp() {
-      if (!etapasData || etapasData.length===0) return 0;
-      const last = etapasData[etapasData.length-1];
-      const t = last.dados && last.dados.temperatura;
-      return typeof t==='number'?t:(parseFloat(t)||0);
-    }
-
     function gerarGrafico() {
-      imgGrafico.src = '/grafico.png?'+Date.now();
-      imgGrafico.style.display='block';
+      document.getElementById('grafico').src = '/grafico.png?' + Date.now();
+      document.getElementById('grafico').style.display = 'block';
     }
 
     async function editarEtapa() {
-      if (selectedIndex===null) return alert('Selecione uma etapa.');
-      // abrir modal e preencher campos de edição com etapasData[selectedIndex]
+      if (selectedIndex === null) return alert('Selecione uma etapa.');
       abrirModal();
-      tipoSelect.value = etapasData[selectedIndex].tipo;
+      const et = etapasData[selectedIndex];
+      document.getElementById('tipo').value = et.tipo;
       mostrarCamposEtapa();
-      // aqui preencha cada input com valores de etapasData[selectedIndex].dados
+      // preencher inputs:
+      Object.entries(et.dados).forEach(([k,v]) => {
+        const idMap = { 'Água': 'agua', 'Relação de Banho': 'relacao', 'produto':'produto', 'Água de Injeção':'agua_inj', 'Tempo de Dosagem':'tempo_dos', 'Curva de Dosagem':'curva_dos', 'Temp. atual':'temp_atual', 'Temp. final':'temp_final', 'Gradiente':'gradiente', 'Temperatura':'temp_pat', 'Tempo':'tempo_pat', 'Relação':'rt_val', 'Temp. Inicial':'ti', 'Temp. Final':'tf', 'Tempo':'tempo_tr', 'Aviso':'aviso', 'Faixa de pH':'faixa_ph' };
+        const el = document.getElementById(idMap[k]||k);
+        if (el) el.value = v;
+      });
     }
-
-    async function excluirEtapa() {
-      if (selectedIndex===null) return alert('Selecione uma etapa.');
-      await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'});
-      location.reload();
-    }
-
-    async function subirEtapa() {
-      if (selectedIndex===null) return alert('Selecione uma etapa.');
-      await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'});
-      location.reload();
-    }
-
-    async function descerEtapa() {
-      if (selectedIndex===null) return alert('Selecione uma etapa.');
-      await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'});
-      location.reload();
-    }
-
-    async function limparEtapas() {
-      if (!confirm('Remover todas as etapas?')) return;
-      await fetch('/limpar_etapas',{method:'POST'});
-      location.reload();
-    }
-
-    async function editarTitulo() {
-      const n = prompt('Novo título:', '{{ titulo }}');
-      if (n!=null) {
-        await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})});
-        location.reload();
-      }
-    }
-
-    function salvarEtapas() { window.location='/salvar_dados'; }
-    function carregarEtapas() { fileInput.click(); }
-
-    async function uploadDados(evt) {
-      const f = evt.target.files[0]; if(!f) return;
-      const fd = new FormData(); fd.append('file',f);
-      const r = await fetch('/carregar_dados',{method:'POST',body:fd});
-      const j = await r.json();
-      if(j.success) location.reload(); else alert('Erro:'+j.error);
-    }
-
-    async function imprimir(comCusto) {
-      const r = await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:comCusto})});
-      const b = await r.blob(); window.open(URL.createObjectURL(b));
-    }
-
+    async function excluirEtapa()  { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/excluir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function subirEtapa()    { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/subir_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function descerEtapa()   { if (selectedIndex===null) return alert('Selecione uma etapa.'); await fetch(`/descer_etapa/${selectedIndex}`,{method:'POST'}); location.reload(); }
+    async function limparEtapas()  { if (!confirm('Remover todas as etapas?')) return; await fetch('/limpar_etapas',{method:'POST'}); location.reload(); }
+    async function editarTitulo()  { const n=prompt('Novo título:', '{{ titulo }}'); if(n!=null){await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})});location.reload();}}  
+    function salvarEtapas()        { window.location='/salvar_dados'; }
+    function carregarEtapas()      { fileInput.click(); }
+    async function uploadDados(evt){ const f=evt.target.files[0]; if(!f) return; const fd=new FormData(); fd.append('file',f); const r=await fetch('/carregar_dados',{method:'POST',body:fd}); const j=await r.json(); if(j.success) location.reload(); else alert('Erro:'+j.error);}  
+    async function imprimir(c)    { const r=await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:c})}); const b=await r.blob(); window.open(URL.createObjectURL(b)); }
   </script>
 </body>
 </html>
