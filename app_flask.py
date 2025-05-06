@@ -81,8 +81,24 @@ def index():
 @app.route("/adicionar_etapa", methods=["POST"])
 def adicionar_etapa():
     dados = request.json
-    etapas.append(Etapa(dados["tipo"], dados["tempo"], dados["temperatura"]))
-    return jsonify(success=True, etapas=etapas_to_list(), tempo_total=calcular_tempo_total())
+    tipo = dados["tipo"]
+    etapa_dados = dados["dados"]
+
+    tempo = etapa_dados.get("tempo", 0)
+    temperatura = etapa_dados.get("temperatura", 0)
+    resumo = etapa_dados.get("resumo", "")
+
+    etapas.append({
+        "tipo": tipo,
+        "dados": {
+            "tempo": tempo,
+            "temperatura": temperatura,
+            "resumo": resumo
+        }
+    })
+
+    return jsonify(success=True, etapas=etapas, tempo_total=calcular_tempo_total())
+
 
 @app.route("/subir_etapa/<int:index>", methods=["POST"])
 def subir_etapa(index):
