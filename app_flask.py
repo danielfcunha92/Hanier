@@ -1,282 +1,179 @@
-from flask import Flask, render_template, request, redirect, send_file, jsonify
-import matplotlib.pyplot as plt
-from reportlab.pdfgen import canvas
+import io
+import json
+from flask import Flask, render_template, request, session, jsonify, send_file
+from matplotlib import pyplot as plt
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
-from PIL import Image
-import io
-import os
-import json
-from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = 'change_this_secret'
+LOGO_PATH = 'static/logo_hanier.png'
 
-# Variáveis de dados
-etapas = []
-receita = []
-titulo_grafico = ""
-relacao_banho = ""
-tempo_total = "0:00"
+@app.before_request
+def init_session():
+    session.setdefault('etapas', [])
+    session.setdefault('receita', [])
+    session.setdefault('titulo', 'Gráficos de Tingimento')
 
-# Caminho do logotipo da Hanier
-LOGO_PATH = "static/logo_hanier.png"
-
-# Classe Etapa
-class Etapa:
-    def __init__(self, tipo, tempo, temperatura):
-        self.tipo = tipo
-        self.tempo = float(tempo)
-        self.temperatura = float(temperatura)
-
-    def to_dict(self):
-        return {
-            "tipo": self.tipo,
-            "tempo": self.tempo,
-            "temperatura": self.temperatura
-        }
-
-# Classe ReceitaItem
-class ReceitaItem:
-    def __init__(self, insumo, quantidade, custo_unitario):
-        self.insumo = insumo
-        self.quantidade = float(quantidade)
-        self.custo_unitario = float(custo_unitario)
-
-    def subtotal(self):
-        return self.quantidade * self.custo_unitario
-
-    def to_dict(self):
-        return {
-            "insumo": self.insumo,
-            "quantidade": self.quantidade,
-            "custo_unitario": self.custo_unitario
-        }
-
-# Funções auxiliares
-def calcular_tempo_total():
-    total = sum([etapa["dados"]["tempo"] for etapa in etapas])
-    horas = int(total // 60)
-    minutos = int(total % 60)
-    return f"{horas}:{minutos:02d}"
-
-
-def etapas_to_list():
-    return etapas  # etapas já é uma lista de dicionários
-
-
-def receita_to_list():
-    return [item.to_dict() for item in receita]
-
-def carregar_dados(data):
-    global etapas, receita, titulo_grafico, relacao_banho
-    etapas = data.get("etapas", [])
-    receita = [ReceitaItem(**r) for r in data.get("receita", [])]
-    titulo_grafico = data.get("titulo", "")
-    relacao_banho = data.get("relacao_banho", "")
-
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html", etapas=etapas_to_list(), receita=receita_to_list(),
-                           titulo=titulo_grafico, relacao_banho=relacao_banho,
-                           tempo_total=calcular_tempo_total())
+    etapas = session['etapas']
+    total_min = sum(et['dados']['tempo'] for et in etapas)
+    horas, minutos = divmod(int(total_min), 60)
+    tempo_str = f"{horas}:{minutos:02d}"
+    return render_template(
+        'index.html',
+        etapas=etapas,
+        tempo_total=tempo_str,
+        titulo=session['titulo'],
+        etapas_json=json.dumps(etapas),
+        receita_json=json.dumps(session['receita'])
+    )
 
-@app.route("/adicionar_etapa", methods=["POST"])
+@app.route('/adicionar_etapa', methods=['POST'])
 def adicionar_etapa():
-    dados = request.json
-    tipo = dados["tipo"]
-    etapa_dados = dados["dados"]
+    data = request.get_json()
+    session['etapas'].append(data)
+    session.modified = True
+    total_min = sum(et['dados']['tempo'] for et in session['etapas'])
+    horas, minutos = divmod(int(total_min), 60)
+    tempo_str = f"{horas}:{minutos:02d}"
+    return jsonify(success=True, etapas=session['etapas'], tempo_total=tempo_str)
 
-    tempo = etapa_dados.get("tempo", 0)
-    temperatura = etapa_dados.get("temperatura", 0)
-    resumo = etapa_dados.get("resumo", "")
+@app.route('/editar_etapa/<int:idx>', methods=['POST'])
+def editar_etapa(idx):
+    data = request.get_json()
+    if 0 <= idx < len(session['etapas']):
+        session['etapas'][idx] = data
+        session.modified = True
+    total_min = sum(et['dados']['tempo'] for et in session['etapas'])
+    horas, minutos = divmod(int(total_min), 60)
+    tempo_str = f"{horas}:{minutos:02d}"
+    return jsonify(success=True, etapas=session['etapas'], tempo_total=tempo_str)
 
-    etapas.append({
-        "tipo": tipo,
-        "dados": {
-            "tempo": tempo,
-            "temperatura": temperatura,
-            "resumo": resumo
-        }
-    })
+@app.route('/excluir_etapa/<int:idx>', methods=['POST'])
+def excluir_etapa(idx):
+    if 0 <= idx < len(session['etapas']):
+        session['etapas'].pop(idx)
+        session.modified = True
+    total_min = sum(et['dados']['tempo'] for et in session['etapas'])
+    horas, minutos = divmod(int(total_min), 60)
+    tempo_str = f"{horas}:{minutos:02d}"
+    return jsonify(success=True, etapas=session['etapas'], tempo_total=tempo_str)
 
-    return jsonify(success=True, etapas=etapas, tempo_total=calcular_tempo_total())
+@app.route('/subir_etapa/<int:idx>', methods=['POST'])
+def subir_etapa(idx):
+    et = session['etapas']
+    if 0 < idx < len(et):
+        et[idx-1], et[idx] = et[idx], et[idx-1]
+        session.modified = True
+    return jsonify(success=True)
 
+@app.route('/descer_etapa/<int:idx>', methods=['POST'])
+def descer_etapa(idx):
+    et = session['etapas']
+    if 0 <= idx < len(et)-1:
+        et[idx], et[idx+1] = et[idx+1], et[idx]
+        session.modified = True
+    return jsonify(success=True)
 
-@app.route("/subir_etapa/<int:index>", methods=["POST"])
-def subir_etapa(index):
-    if 0 < index < len(etapas):
-        etapas[index - 1], etapas[index] = etapas[index], etapas[index - 1]
-    return jsonify(etapas=etapas_to_list())
-
-@app.route("/descer_etapa/<int:index>", methods=["POST"])
-def descer_etapa(index):
-    if 0 <= index < len(etapas) - 1:
-        etapas[index + 1], etapas[index] = etapas[index], etapas[index + 1]
-    return jsonify(etapas=etapas_to_list())
-
-@app.route("/excluir_etapa/<int:index>", methods=["POST"])
-def excluir_etapa(index):
-    if 0 <= index < len(etapas):
-        etapas.pop(index)
-    return jsonify(etapas=etapas_to_list(), tempo_total=calcular_tempo_total())
-
-@app.route("/limpar_etapas", methods=["POST"])
+@app.route('/limpar_etapas', methods=['POST'])
 def limpar_etapas():
-    etapas.clear()
-    return jsonify(etapas=etapas_to_list(), tempo_total="0:00")
+    session['etapas'].clear()
+    session.modified = True
+    return jsonify(success=True)
 
-@app.route("/atualizar_titulo", methods=["POST"])
+@app.route('/atualizar_titulo', methods=['POST'])
 def atualizar_titulo():
-    global titulo_grafico
-    titulo_grafico = request.json.get("titulo", "")
+    data = request.get_json()
+    session['titulo'] = data.get('titulo', session['titulo'])
+    session.modified = True
     return jsonify(success=True)
 
-@app.route("/atualizar_relacao", methods=["POST"])
-def atualizar_relacao():
-    global relacao_banho
-    relacao_banho = request.json.get("relacao", "")
-    return jsonify(success=True)
-
-@app.route("/atualizar_receita", methods=["POST"])
-def atualizar_receita():
-    global receita
-    dados = request.json.get("receita", [])
-    receita = [ReceitaItem(item["insumo"], item["quantidade"], item["custo_unitario"]) for item in dados]
-    return jsonify(success=True)
-
-@app.route("/grafico.png")
-def gerar_grafico():
-    if not etapas:
-        return "", 204  # Sem conteúdo
-
-    tempos = [0]
-    temperaturas = []
-
-    acumulado = 0
-    for etapa in etapas:
-        tempo = etapa["dados"].get("tempo", 0)
-        temp = etapa["dados"].get("temperatura", 0)
-
-        acumulado += tempo
-        tempos.append(acumulado)
-        temperaturas.append(temp)
-
-    if len(temperaturas) < len(tempos):
-        temperaturas.insert(0, temperaturas[0])
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(tempos, temperaturas, marker='o', color='royalblue')
-    ax.set_xlabel("Tempo (min)")
-    ax.set_ylabel("Temperatura (°C)")
-    ax.set_title(titulo_grafico or "Gráfico de Tingimento")
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    plt.close()
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')  # ✅ Agora dentro da função
-
-
-@app.route("/imprimir_pdf", methods=["POST"])
-def imprimir_pdf():
-    incluir_custo = request.json.get("com_custo", False)
-
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-
-    try:
-        logo = ImageReader(LOGO_PATH)
-        c.drawImage(logo, 440, 720, width=120, preserveAspectRatio=True, mask='auto')
-    except:
-        pass
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, 750, titulo_grafico or "Processo de Tingimento")
-    c.setFont("Helvetica", 11)
-
-    y = 720
-    for etapa in etapas:
-        dados = etapa["dados"]
-        resumo = dados.get("resumo", "")
-        linha = f"{etapa['tipo']}: {resumo} - {dados.get('tempo', 0)} min, {dados.get('temperatura', 0)}°C"
-
-        c.drawString(50, y, linha)
-        y -= 18
-        if y < 100:
-            c.showPage()
-            y = 750
-
-    c.drawString(50, y - 25, f"Tempo total: {calcular_tempo_total()} h")
-    c.drawString(50, y - 40, f"Relação de banho: {relacao_banho}")
-
-    # Página 2: Receita
-    c.showPage()
-    try:
-        c.drawImage(logo, 440, 720, width=120, preserveAspectRatio=True, mask='auto')
-    except:
-        pass
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, 750, "Receita")
-    c.setFont("Helvetica", 11)
-
-    y = 720
-    total = 0
-    for item in receita:
-        if incluir_custo:
-            subtotal = item.subtotal()
-            linha = f"{item.insumo}: {item.quantidade} kg x R$ {item.custo_unitario:.2f} = R$ {subtotal:.2f}"
-            total += subtotal
-        else:
-            linha = f"{item.insumo}: {item.quantidade} kg"
-        c.drawString(50, y, linha)
-        y -= 18
-        if y < 100:
-            c.showPage()
-            y = 750
-
-    if incluir_custo:
-        c.drawString(50, y - 25, f"Total: R$ {total:.2f}")
-
-    c.save()
-    buffer.seek(0)
-
-    return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name="processo.pdf")
-
-
-@app.route("/salvar_dados", methods=["GET"])
+@app.route('/salvar_dados')
 def salvar_dados():
     dados = {
-        "etapas": etapas_to_list(),
-        "receita": receita_to_list(),
-        "titulo": titulo_grafico,
-        "relacao_banho": relacao_banho
+        'titulo': session['titulo'],
+        'etapas': session['etapas'],
+        'receita': session['receita']
     }
+    buf = io.BytesIO()
+    buf.write(json.dumps(dados, indent=2).encode())
+    buf.seek(0)
+    return send_file(buf, mimetype='application/json', download_name='dados_tingimento.json', as_attachment=True)
 
-    buffer = io.BytesIO()
-    buffer.write(json.dumps(dados, indent=2).encode("utf-8"))
-    buffer.seek(0)
-
-    return send_file(buffer, as_attachment=True, download_name="processo_dados.json", mimetype="application/json")
-
-@app.route("/carregar_dados", methods=["POST"])
-def carregar_arquivo():
-    file = request.files.get("file")
-    if not file:
-        return jsonify(success=False, error="Arquivo não encontrado.")
-
+@app.route('/carregar_dados', methods=['POST'])
+def carregar_dados():
+    file = request.files.get('file')
     try:
-        dados = json.load(file)
-        carregar_dados(dados)
+        data = json.load(file)
+        session['titulo'] = data.get('titulo', session['titulo'])
+        session['etapas'] = data.get('etapas', [])
+        session['receita'] = data.get('receita', [])
+        session.modified = True
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, error=str(e))
 
+@app.route('/grafico.png')
+def grafico_png():
+    etapas = session['etapas']
+    if not etapas:
+        return '', 204
+    tempos = [0]
+    temps = [etapas[0]['dados']['temperatura']]
+    acum = 0
+    for et in etapas:
+        acum += et['dados']['tempo']
+        tempos.append(acum)
+        temps.append(et['dados']['temperatura'])
+    buf = io.BytesIO()
+    plt.figure(figsize=(8,4))
+    plt.plot(tempos, temps, marker='o')
+    plt.xlabel('Tempo (min)')
+    plt.ylabel('Temperatura (°C)')
+    plt.tight_layout()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
 
-if __name__ == "__main__":
-    # Configura o diretório 'static' para servir imagens, logo, etc.
-    os.makedirs("static", exist_ok=True)
-    if not os.path.exists(LOGO_PATH):
-        # Cria um placeholder se o logo não existir
-        Image.new("RGBA", (300, 100), (255, 255, 255, 0)).save(LOGO_PATH)
+@app.route('/imprimir_pdf', methods=['POST'])
+def imprimir_pdf():
+    data = request.get_json()
+    com_custo = data.get('com_custo', False)
+    buf = io.BytesIO()
+    c = pdf_canvas.Canvas(buf, pagesize=letter)
+    try:
+        logo = ImageReader(LOGO_PATH)
+        c.drawImage(logo, 440, 750, width=120, preserveAspectRatio=True, mask='auto')
+    except:
+        pass
+    c.setFont('Helvetica-Bold', 14)
+    c.drawString(50, 800, session['titulo'])
+    # gráfico inline
+    chart_buf = io.BytesIO()
+    tempos=[0]; temps=[session['etapas'][0]['dados']['temperatura'] if session['etapas'] else 0]; acum=0
+    for et in session['etapas']:
+        acum+=et['dados']['tempo']; tempos.append(acum); temps.append(et['dados']['temperatura'])
+    plt.figure(figsize=(8,4)); plt.plot(tempos, temps, marker='o'); plt.tight_layout(); plt.savefig(chart_buf, format='png'); chart_buf.seek(0)
+    c.drawImage(ImageReader(chart_buf), 50, 500, width=500, height=250)
+    y=480; c.setFont('Helvetica', 11)
+    for et in session['etapas']:
+        c.drawString(50, y, f"- {et['tipo']}: {et['dados']['resumo']} ({et['dados']['tempo']} min)")
+        y-=15
+        if y<100: c.showPage(); y=800
+    total_min = sum(et['dados']['tempo'] for et in session['etapas'])
+    h, m = divmod(int(total_min), 60)
+    c.drawString(50, y-20, f"Tempo total: {h}:{m:02d}")
+    # página 2: receita
+    c.showPage()
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(50, 800, 'Receita' + (' e Custo' if com_custo else ''))
+    # TODO: desenhar tabela de receita
+    c.save()
+    buf.seek(0)
+    return send_file(buf, mimetype='application/pdf', download_name='processo.pdf')
 
-    app.run(host="0.0.0.0", port=10000)
+if __name__ == '__main__':
+    app.run(debug=True)
