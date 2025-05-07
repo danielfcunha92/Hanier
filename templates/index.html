@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -50,6 +51,7 @@
       <button id="btnTitulo">Editar Título</button>
       <button id="btnSalvar">Salvar Etapas</button>
       <button id="btnCarregar">Carregar Etapas</button>
+   <input type="file" id="fileInput" accept=".json" style="display:none">      
       <button id="btnImprimir">Imprimir</button>
       <button id="btnReceita">Receita</button>
     </div>
@@ -147,7 +149,7 @@
     </div>
   </div>
 
-  <input type="file" id="fileInput" accept=".json" style="display:none">
+
 
   <script>
     const etapasData = {{ etapas_json | safe }};
@@ -171,9 +173,18 @@
       const btnLimpar    = document.getElementById('btnLimpar');
       const btnTitulo    = document.getElementById('btnTitulo');
       const btnSalvar    = document.getElementById('btnSalvar');
+
       const btnCarregar  = document.getElementById('btnCarregar');
+     // ➌ abre o diálogo quando clicar no botão
+
+   
+
+
       const btnImprimir  = document.getElementById('btnImprimir');
       const btnReceita   = document.getElementById('btnReceita');
+
+
+
       const btnGrafico   = document.getElementById('btnGrafico');
       const tipoSelect   = document.getElementById('tipo');
       const btnConfirmar = document.getElementById('btnConfirmar');
@@ -212,7 +223,7 @@
       btnSalvar  .addEventListener('click', salvarEtapas);
       btnCarregar.addEventListener('click', () => fileInput.click());
       btnImprimir.addEventListener('click', () => imprimir(false));
-      fileInput  .addEventListener('change', uploadDados);
+      fileInput  .addEventListener('change', uploadDados);;
 
       // Selecionar linha
       tabela.querySelectorAll('tr[data-index]')
@@ -539,7 +550,36 @@
 
     async function limparEtapas()  { if (!confirm('Remover todas?')) return; await fetch('/limpar_etapas',{method:'POST'}); location.reload(); }
     async function editarTitulo()  { const n=prompt('Novo título:','{{ titulo }}'); if (n!=null) { await fetch('/atualizar_titulo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:n})}); location.reload(); } }
-    function salvarEtapas()        { window.location = '/salvar_dados'; }
+
+
+ async function salvarEtapas() {
+   const data = JSON.stringify(etapasData, null, 2);
+
+   if (window.showSaveFilePicker) {
+     try {
+       const handle = await window.showSaveFilePicker({
+         suggestedName: 'etapas.json',
+         types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+       });
+       const writable = await handle.createWritable();
+       await writable.write(data);
+       await writable.close();
+     } catch (err) {
+       console.error('Save cancelled or failed:', err);
+     }
+   } else {
+     const blob = new Blob([data], { type: 'application/json' });
+     const url  = URL.createObjectURL(blob);
+     const a    = document.createElement('a');
+     a.href     = url;
+     a.download = 'etapas.json';
+     document.body.appendChild(a);
+     a.click();
+     a.remove();
+     URL.revokeObjectURL(url);
+   }
+ }
+
     function uploadDados(evt)     { const f=evt.target.files[0]; if (!f) return; const fd=new FormData(); fd.append('file',f); fetch('/carregar_dados',{method:'POST',body:fd}).then(r=>r.json()).then(j=> j.success?location.reload():alert('Erro:'+j.error)); }
     async function imprimir(c)    { const r=await fetch('/imprimir_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({com_custo:c})}); const b=await r.blob(); window.open(URL.createObjectURL(b)); }
 

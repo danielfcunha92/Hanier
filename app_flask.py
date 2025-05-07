@@ -1,3 +1,4 @@
+
 import io
 import json
 import os
@@ -124,14 +125,28 @@ def salvar_dados():
 def carregar_dados():
     file = request.files.get('file')
     try:
+        # carrega JSON (pode ser dict ou lista)
         data = json.load(file)
-        session['titulo'] = data.get('titulo', session['titulo'])
-        session['etapas'] = data.get('etapas', [])
-        session['receita'] = data.get('receita', [])
+
+        if isinstance(data, dict):
+            # formato { "titulo":..., "etapas":[...], "receita":[...] }
+            session['titulo']  = data.get('titulo', session['titulo'])
+            session['etapas']  = data.get('etapas', [])
+            session['receita'] = data.get('receita', [])
+        elif isinstance(data, list):
+            # formato antigo: raiz é lista de etapas
+            session['etapas'] = data
+            # mantém titulo/receita atuais, se houver
+        else:
+            # tipo inesperado
+            return jsonify(success=False, error="JSON deve ser objeto ou lista"), 400
+
         session.modified = True
         return jsonify(success=True)
+
     except Exception as e:
         return jsonify(success=False, error=str(e))
+
 
 
 @app.route('/grafico.png')
