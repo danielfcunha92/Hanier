@@ -17,6 +17,25 @@
     #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
     #modal-content { background: white; padding: 20px; border-radius: 8px; min-width: 400px; }
     #modal select, #modal input { margin-bottom: 10px; width: 100%; padding: 6px; }
+
+    /* estilos para o container e botões de lado */
+    .table-container {
+      display: flex;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+    .side-buttons {
+      display: flex;
+      flex-direction: column;
+      margin-right: 10px;
+    }
+    .side-buttons button {
+      margin-bottom: 6px;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      line-height: 0;
+    }
   </style>
 </head>
 <body>
@@ -28,8 +47,6 @@
       <button id="btnNova">Nova Etapa</button>
       <button id="btnEditar">Editar Etapa</button>
       <button id="btnExcluir">Excluir Etapa</button>
-      <button id="btnSubir">↑ Subir</button>
-      <button id="btnDescer">↓ Descer</button>
       <button id="btnLimpar">Limpar</button>
       <button id="btnTitulo">Editar Título</button>
       <button id="btnSalvar">Salvar Etapas</button>
@@ -37,16 +54,24 @@
       <button id="btnImprimir">Imprimir</button>
       <button id="btnReceita">Receita</button>
     </div>
-    <table id="tabela-etapas">
-      <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
-      {% for etapa in etapas %}
-      <tr data-index="{{ loop.index0 }}">
-        <td>{{ etapa.tipo }}</td>
-        <td>{{ etapa.dados.resumo }}</td>
-        <td>{{ etapa.dados.tempo }}</td>
-      </tr>
-      {% endfor %}
-    </table>
+
+    <div class="table-container">
+      <div class="side-buttons">
+        <button id="btnSubir" title="Subir etapa selecionada">↑</button>
+        <button id="btnDescer" title="Descer etapa selecionada">↓</button>
+      </div>
+      <table id="tabela-etapas">
+        <tr><th>Tipo de Etapa</th><th>Resumo</th><th>Tempo (min)</th></tr>
+        {% for etapa in etapas %}
+        <tr data-index="{{ loop.index0 }}" onclick="selecionarLinha(event)">
+          <td>{{ etapa.tipo }}</td>
+          <td>{{ etapa.dados.resumo }}</td>
+          <td>{{ etapa.dados.tempo }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
     <p>Tempo total: {{ tempo_total }}</p>
     <h3>Gráfico de Temperatura × Tempo</h3>
     <button id="btnGrafico">Gerar Gráfico</button>
@@ -98,8 +123,15 @@
       btnGrafico.addEventListener('click', gerarGrafico);
       btnEditar.addEventListener('click', editarEtapa);
       btnExcluir.addEventListener('click', excluirEtapa);
-      btnSubir.addEventListener('click', subirEtapa);
-      btnDescer.addEventListener('click', descerEtapa);
+      btnSubir.addEventListener('click', () => {
+        if (selectedIndex === null) return alert('Selecione uma etapa.');
+        subirEtapa();
+      });
+      btnDescer.addEventListener('click', () => {
+        if (selectedIndex === null) return alert('Selecione uma etapa.');
+        descerEtapa();
+      });
+
       btnLimpar.addEventListener('click', limparEtapas);
       btnTitulo.addEventListener('click', editarTitulo);
       btnSalvar.addEventListener('click', salvarEtapas);
@@ -119,6 +151,7 @@
       tr.classList.add('selected');
       selectedIndex = +tr.dataset.index;
     }
+
 
     function abrirModal() {
       const tipos = [
